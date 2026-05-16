@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+    <AssemblyName>rfPlugin</AssemblyName>
+    <Product>rfPlugin</Product>
+    <Version>0.1.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+    <RestoreAdditionalProjectSources>
+      https://api.nuget.org/v3/index.json;
+      https://nuget.bepinex.dev/v3/index.json;
+      https://nuget.samboy.dev/v3/index.json
+    </RestoreAdditionalProjectSources>
+    <RootNamespace>rfPlugin</RootNamespace>
+  </PropertyGroup>
+
+  <!-- TODO: currently uses hard paths on my system, yippie -->
+    
+  <ItemGroup>
+    <Reference Include="Assembly-CSharp"> <!-- this is where VSeeFace lives -->
+      <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/Assembly-CSharp.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/UnityEngine.UI.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup> <!-- https://github.com/loco-choco/GizmosLibraryPlugin -->
+    <Reference Include="GizmosLibraryPlugin">
+      <HintPath>C:/Users/rf/Documents/VSeeFace/BepInEx/plugins/GizmosLibraryPlugin.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+    <PackageReference Include="UnityEngine.Modules" Version="2019.4.31" IncludeAssets="compile" />
+  </ItemGroup>
+  
+  <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.2" PrivateAssets="all" />
+  </ItemGroup>
+</Project>
