@@ -5,7 +5,8 @@ namespace rfPlugin.VSeeFace;
 
 /*
   See VSeeFaceHelper.cs for the main class. These patches are part of it.
-  Patches UnityEngine.UI.Button
+  Patches UnityEngine.UI.Button, not strictly a VSeeFace class but we'll
+  see if I need to patch anything random like this.
 */
 public partial class VSeeFaceHelper
 {

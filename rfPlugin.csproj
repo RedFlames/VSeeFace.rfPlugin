@@ -28,10 +28,16 @@
       <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/UnityEngine.UI.dll</HintPath>
     </Reference>
   </ItemGroup>
-
+  
   <ItemGroup>
     <Reference Include="Unity.TextMeshPro">
       <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/Unity.TextMeshPro.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Reference Include="LeapMotion">
+      <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/LeapMotion.dll</HintPath>
     </Reference>
   </ItemGroup>
   

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -19,6 +20,8 @@ public partial class VSeeFaceHelper
     // VSeeFace's instance of its PropWindow class
     public static PropWindow PropWindow;
 
+    public static List<PropButtonWrapper> PropButtons = [];
+    
     // keep track of buttons added to right menu
     public static List<GameObject> AddedMenuButtons = [];
     
@@ -31,12 +34,11 @@ public partial class VSeeFaceHelper
         MainUI = new();
         
         // TODO: Fix me
-        var pp = Resources.FindObjectsOfTypeAll<PropWindow>();
-        if (pp.Length > 0)
-            PropWindow = pp.FirstOrDefault();
-        pp = GameObject.FindObjectsOfType<PropWindow>();
-        if (pp.Length > 0)
-            PropWindow = pp.FirstOrDefault();
+        var comp = MainUI.propsWindow.GetComponent<PropWindow>();
+        if (comp)
+            PropWindow = comp;
+        else
+            RfPlugin.LogError($"Failed to get PropWindow component from Props Window GameObject!");
         
         RfPlugin.Log("VSeeFaceHelper initialized.");
         initialized = true;
@@ -78,13 +80,24 @@ public partial class VSeeFaceHelper
     
     }
 
-    public static GameObject CreatePropWindowEntry()
+    public static PropButtonWrapper CreatePropWindowEntry()
     {
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropWindowEntry before Init!");
         
         var newEntry = GameObject.Instantiate(PropWindow.propButtonPrefab, PropWindow.content);
+        
         PropButton componentInChildren = newEntry.GetComponentInChildren<PropButton>();
+
+        PropButtonWrapper newWrapped = new(newEntry);
+        PropButtonWrapper newWrapped2 = new(componentInChildren);
+        
+        RfPlugin.LogWarn("PropButtonWrapper.DebugMe newWrapped");
+        
+        newWrapped.DebugMe();
+        RfPlugin.LogWarn("PropButtonWrapper.DebugMe newWrapped2");
+        newWrapped2.DebugMe();
+
         componentInChildren.window = PropWindow;
         //Prop component = gO_Text.GetComponent<Prop>();
         //component.currentSettings = PropManager.Singleton.baseSettings;
@@ -104,14 +117,33 @@ public partial class VSeeFaceHelper
             text = newEntry.AddComponent<TextMeshProUGUI>();
         
         // junk, yippie
-
+        
         if (text)
         {
             text.enabled = true;
-            text.text = "TestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTestTest";
+            text.text = "Testing";
         }
 
-        return newEntry;
+        return newWrapped;
+    }
+
+    public static Prop SpawnProp(Texture2D tex)
+    {
+        var newProp = PropManager.Singleton.CreateProp(tex,  new List<Prop.ImageDelay>());
+        
+        //Traverse.Create(targetProp).Field<Transform>("attachedBone").Value = attachedBone;
+        //targetProp.propImage.transform.position = __instance.prop.transform.position;
+        newProp.propImage.gameObject.SetActive(false);
+        //var sprI = Traverse.Create(__instance.prop).Field<Transform>("sprite").Value;
+        //var sprT = Traverse.Create(newProp).Field<Transform>("sprite").Value;
+        //sprT.localScale = sprI.localScale;
+        var mr = newProp.GetComponentInChildren<MeshRenderer>();
+        mr.material.SetInt("_ZTest", 0);
+        mr.material.renderQueue = 5000;
+        //mr.material.mainTextureScale = new(.5f, .5f);
+        RfPlugin.LogDebug($"-- spawning prop -- {newProp} {tex}");
+        //mr.enabled = false;
+        return newProp;
     }
     
     // Log dump looking at all the children and components of the main UI?
@@ -122,7 +154,7 @@ public partial class VSeeFaceHelper
         
         foreach (GameObject go in MainUI.mainUI.TransChildren())
         {
-
+            
             RfPlugin.LogGameObject("mainUI child", go);
         }
 

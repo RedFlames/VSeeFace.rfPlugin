@@ -1,8 +1,12 @@
-﻿using BepInEx;
+﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using rfPlugin.VSeeFace;
 using UnityEngine;
+using UnityEngine.UI;
+using uWindowCapture;
 
 namespace rfPlugin;
 
@@ -24,6 +28,9 @@ public partial class RfPlugin : BaseUnityPlugin
     public static void LogGameObject(string prefix, GameObject go) => Logger.LogDebug($"[{prefix}] go: <{go.FullPath()}> {go} [{go.GetType()}] {go.gameObject} [{go.gameObject.GetType()}]");
     public static void LogComponent(string prefix, Component co) => Logger.LogDebug($"[{prefix}] co: {co} [{co.GetType()}] {co.gameObject} [{co.gameObject.GetType()}]");
     
+    // see patches in Util.cs, just cleaning up the BepInEx console while debugging
+    public static bool SuppressOtherLogSpam { get; private set; } = true;
+
     // needed for applying the patches
     public Harmony Harmony { get; } = new(MyPluginInfo.PLUGIN_NAME);
     // The plugin probably acts like a singleton, right?
@@ -35,13 +42,13 @@ public partial class RfPlugin : BaseUnityPlugin
     
     private static Prop targetProp;
     
-    private static GameObject _Sphere = null;
+    private static List<GameObject> _Spheres = [];
     
     // init plugin when Unity instance of it "wakes up"
     private void Awake()
     {
         Instance = this;
-
+        
         // Plugin startup logic
         Logger = base.Logger;
         Log($"Plugin {MyPluginInfo.PLUGIN_GUID} is loaded!");
@@ -53,21 +60,72 @@ public partial class RfPlugin : BaseUnityPlugin
         VSeeFaceHelper.Init();
         
         // just some debugging log dumps to find VSeeFace stuff
-        VSeeFaceHelper.DumpObjectsByName();
-        VSeeFaceHelper.DebugLogObjects();
+        //VSeeFaceHelper.DumpObjectsByName();
+        //VSeeFaceHelper.DebugLogObjects();
         
         // To see what the Detect shader looks like in practice.
         // Might be missing the material setup stuff from RaycastMesh until you start attaching a prop.
         //Camera.main.SetReplacementShader(Shader.Find("Custom/Detect"), "RenderType");
+
+        for (int i = 0; i < 5; i++)
+            _Spheres.Add(UnityHelper.CreateTransparentSphere(alpha: .05f + .1f * i));
     
         // --- Add new right-menu button(s) ---
-        VSeeFaceHelper.CreateMenuButton("test", btn_callback);
+        var btn = VSeeFaceHelper.CreateMenuButton("test", btn_callback);
+    
     }
-
+    
+    private static bool _spheresVisible = false;
+    public static bool SpheresVisible {
+        get
+        {
+            return _spheresVisible;
+        }
+        set
+        {
+            if (value != _spheresVisible)
+                ToggleSpheres(value);
+        }
+    }
+    
+    public static void ToggleSpheres(bool active = true)
+    {
+        _spheresVisible = active;
+        foreach (var sphere in _Spheres)
+        {
+            sphere.SetActive(active);
+            if (sphere.GetComponent<MeshRenderer>() is MeshRenderer mr)
+                mr.enabled = active;
+        }
+    }
+    
+    public static void UpdateSpheres(Vector3 pos, Vector3 locScale)
+    {
+        int i = 1;
+        foreach (var sphere in _Spheres)
+        {
+            var factor = 2f / i;
+            //var factor = .1f * i;
+            sphere.transform.position = pos;
+            sphere.transform.localScale = locScale * factor;
+            
+            i++;
+        }
+    }
     
     private void Update()
     {
         // A lot of plugin related things happen in the Harmony patches.
+
+        // TODO: make this happen in a PropWindow.Update patch or something
+        var title = VSeeFaceHelper.PropWindow.transform.Find("Title");
+        if (title && title.GetComponent<Text>() is Text textUI)
+        {
+            textUI.text = $"Props ({VSeeFaceHelper.PropButtons.Count})";
+        } else
+        {
+            // log warn once?
+        }
     }
     
     /*
@@ -97,7 +155,7 @@ public partial class RfPlugin : BaseUnityPlugin
         });*/
 
         // draw some gizmos after/while a VSF prop is being attached
-        if (_Sphere != null && attachedBone != null)
+        if (attachedBone != null)
         {
             // frame of reference is the bone that the prop attaches to
             GizmosLibraryPlugin.GizmosAPI.DrawWithReference(attachedBone,() =>
@@ -115,7 +173,14 @@ public partial class RfPlugin : BaseUnityPlugin
     // just a lil guy for the new menu button
     public void btn_callback()
     {
-        LogDebug($"listenerrrrrrrr");
+        var btn = VSeeFaceHelper.CreatePropWindowEntry();
+
+        var p = VSeeFaceHelper.PropWindow;
+        
+        LogWarn("PropButtonWrapper.Debug menuRightFirst PropButton / gO ");
+        PropButtonWrapper.Debug(p.GetComponentInChildren<PropButton>(), p.gameObject);
+
+        Log($"Tracked prop buttons: {VSeeFaceHelper.PropButtons.Count}");
     }
     
 }

@@ -16,30 +16,16 @@ public partial class RfPlugin
     {
         static bool Prefix(MeshRaycaster __instance)
         {
-            if (_Sphere != null)
-            {
-                sphWasActive = _Sphere.activeSelf;
-                
-                _Sphere.SetActive(false);
-                
-                MeshRenderer sphRenderer = _Sphere.GetComponent<MeshRenderer>();
-                if (sphRenderer != null)
-                    sphRenderer.enabled = false;
-                
-            }
+            sphWasActive = SpheresVisible;
+            
+            SpheresVisible = false;
+
             return true;
         }
         
         static void Postfix(MeshRaycaster __instance)
         {
-            if (_Sphere != null && sphWasActive)
-            {
-                _Sphere.SetActive(true);
-                
-                MeshRenderer sphRenderer = _Sphere.GetComponent<MeshRenderer>();
-                if (sphRenderer != null)
-                    sphRenderer.enabled = true;
-            }
+            SpheresVisible = sphWasActive;
         }
     }
 }
