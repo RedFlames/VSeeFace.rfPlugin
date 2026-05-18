@@ -52,7 +52,7 @@ public partial class RfPlugin
         [HarmonyPatch("LateUpdate")]
         static void LateUpdate_Postfix(PropImage __instance)
         {
-            var log = false;
+            var log = true;
             var dragged = Traverse.Create(__instance.prop).Field<bool>("dragged").Value;
             var image = __instance.GetComponent<RawImage>();
             

@@ -41,6 +41,8 @@ public partial class RfPlugin : BaseUnityPlugin
     public static Transform attachedBone = null;
     
     private static Prop targetProp;
+
+    public static PropWindow ExtraPropWindow { get; private set; }
     
     private static List<GameObject> _Spheres = [];
     
@@ -58,6 +60,8 @@ public partial class RfPlugin : BaseUnityPlugin
         
         // grabs references to Unity game objects of UI elements etc.
         VSeeFaceHelper.Init();
+
+        ExtraPropWindow = VSeeFaceHelper.CreateNewPropWindow();
         
         // just some debugging log dumps to find VSeeFace stuff
         //VSeeFaceHelper.DumpObjectsByName();
@@ -71,7 +75,8 @@ public partial class RfPlugin : BaseUnityPlugin
             _Spheres.Add(UnityHelper.CreateTransparentSphere(alpha: .05f + .1f * i));
     
         // --- Add new right-menu button(s) ---
-        var btn = VSeeFaceHelper.CreateMenuButton("test", btn_callback);
+        var btn = VSeeFaceHelper.CreateMenuButton("test", btn_callback, 3);
+        var btn2 = VSeeFaceHelper.CreateMenuButton("test2", btn_callback2);
     
     }
     
@@ -118,7 +123,7 @@ public partial class RfPlugin : BaseUnityPlugin
         // A lot of plugin related things happen in the Harmony patches.
 
         // TODO: make this happen in a PropWindow.Update patch or something
-        var title = VSeeFaceHelper.PropWindow.transform.Find("Title");
+        var title = VSeeFaceHelper.MainPropWindow.transform.Find("Title");
         if (title && title.GetComponent<Text>() is Text textUI)
         {
             textUI.text = $"Props ({VSeeFaceHelper.PropButtons.Count})";
@@ -173,14 +178,20 @@ public partial class RfPlugin : BaseUnityPlugin
     // just a lil guy for the new menu button
     public void btn_callback()
     {
-        var btn = VSeeFaceHelper.CreatePropWindowEntry();
-
-        var p = VSeeFaceHelper.PropWindow;
+        var btn = VSeeFaceHelper.CreatePropButton("Testing");
+        
+        var p = VSeeFaceHelper.MainPropWindow;
         
         LogWarn("PropButtonWrapper.Debug menuRightFirst PropButton / gO ");
         PropButtonWrapper.Debug(p.GetComponentInChildren<PropButton>(), p.gameObject);
-
+        
         Log($"Tracked prop buttons: {VSeeFaceHelper.PropButtons.Count}");
+    }
+    
+    public void btn_callback2()
+    {
+        var btn = VSeeFaceHelper.CreatePropButton("Zesting", ExtraPropWindow);
+        
     }
     
 }

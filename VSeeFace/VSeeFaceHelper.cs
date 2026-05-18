@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
+using rfPlugin.VSeeFace.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,7 +20,7 @@ public partial class VSeeFaceHelper
     public static UI.MainUI MainUI;
     
     // VSeeFace's instance of its PropWindow class
-    public static PropWindow PropWindow;
+    public static PropWindow MainPropWindow;
 
     public static List<PropButtonWrapper> PropButtons = [];
     
@@ -36,7 +38,7 @@ public partial class VSeeFaceHelper
         // TODO: Fix me
         var comp = MainUI.propsWindow.GetComponent<PropWindow>();
         if (comp)
-            PropWindow = comp;
+            MainPropWindow = comp;
         else
             RfPlugin.LogError($"Failed to get PropWindow component from Props Window GameObject!");
         
@@ -44,17 +46,23 @@ public partial class VSeeFaceHelper
         initialized = true;
     }
     
-    public static GameObject CreateMenuButton(string text, UnityEngine.Events.UnityAction callback)
+    public static GameObject CreateMenuButton(string text, UnityEngine.Events.UnityAction callback, int siblingIndex = -1)
     {
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreateMenuButton before Init!");
         
         var menuRightFirst = MainUI.menuRight.transform.GetChild(0);
-
+        
         GameObject newBtn = GameObject.Instantiate(menuRightFirst.gameObject);
         AddedMenuButtons.Add(newBtn);
         
         newBtn.transform.SetParent(MainUI.menuRight.transform, false);
+        
+        siblingIndex = Math.Min(siblingIndex, MainUI.menuRight.transform.childCount-1);
+        
+        if (siblingIndex >= 0)
+            newBtn.transform.SetSiblingIndex(siblingIndex);
+
         newBtn.SetActive(true);
         
         Text textComp = newBtn.GetComponentInChildren<Text>();
@@ -80,12 +88,22 @@ public partial class VSeeFaceHelper
     
     }
 
-    public static PropButtonWrapper CreatePropWindowEntry()
+    public static PropWindow CreateNewPropWindow()
+    {
+        var window = GameObject.Instantiate(MainPropWindow);
+        window.transform.parent = MainUI.Settings.settings.transform;
+        return window;
+    }
+
+    public static PropButtonWrapper CreatePropButton(string text, PropWindow window = null)
     {
         if (!initialized)
-            RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropWindowEntry before Init!");
+            RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropButton before Init!");
+
+        if (window == null)
+            window = MainPropWindow;
         
-        var newEntry = GameObject.Instantiate(PropWindow.propButtonPrefab, PropWindow.content);
+        var newEntry = GameObject.Instantiate(window.propButtonPrefab, window.content);
         
         PropButton componentInChildren = newEntry.GetComponentInChildren<PropButton>();
 
@@ -98,7 +116,7 @@ public partial class VSeeFaceHelper
         RfPlugin.LogWarn("PropButtonWrapper.DebugMe newWrapped2");
         newWrapped2.DebugMe();
 
-        componentInChildren.window = PropWindow;
+        componentInChildren.window = window;
         //Prop component = gO_Text.GetComponent<Prop>();
         //component.currentSettings = PropManager.Singleton.baseSettings;
         //component.gameObject.SetActive(value: false);
@@ -108,20 +126,20 @@ public partial class VSeeFaceHelper
 
         // TODO: Fix me
 
-        var text = newEntry.GetComponent<TextMeshProUGUI>();
+        var textUI = newEntry.GetComponent<TextMeshProUGUI>();
 
-        if (!text)
-            text = newEntry.GetComponentInChildren<TextMeshProUGUI>();
+        if (!textUI)
+            textUI = newEntry.GetComponentInChildren<TextMeshProUGUI>();
 
-        if (!text)
-            text = newEntry.AddComponent<TextMeshProUGUI>();
+        if (!textUI)
+            textUI = newEntry.AddComponent<TextMeshProUGUI>();
         
         // junk, yippie
         
-        if (text)
+        if (textUI)
         {
-            text.enabled = true;
-            text.text = "Testing";
+            textUI.enabled = true;
+            textUI.text = text;
         }
 
         return newWrapped;
