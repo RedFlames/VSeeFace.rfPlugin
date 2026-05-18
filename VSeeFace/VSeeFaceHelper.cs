@@ -149,12 +149,7 @@ public partial class VSeeFaceHelper
     {
         var newProp = PropManager.Singleton.CreateProp(tex,  new List<Prop.ImageDelay>());
         
-        //Traverse.Create(targetProp).Field<Transform>("attachedBone").Value = attachedBone;
-        //targetProp.propImage.transform.position = __instance.prop.transform.position;
         newProp.propImage.gameObject.SetActive(false);
-        //var sprI = Traverse.Create(__instance.prop).Field<Transform>("sprite").Value;
-        //var sprT = Traverse.Create(newProp).Field<Transform>("sprite").Value;
-        //sprT.localScale = sprI.localScale;
         var mr = newProp.GetComponentInChildren<MeshRenderer>();
         mr.material.SetInt("_ZTest", 0);
         mr.material.renderQueue = 5000;

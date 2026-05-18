@@ -37,8 +37,8 @@ public partial class VSeeFaceHelper
                     b in __instance.GetComponentsInChildren<PropButton>()
                     where b.gameObject.activeSelf
                     select b.imagePath;
-                var propListFile = Traverse.Create(__instance).Field<string>("propListFile").Value;
-                RfPlugin.Log($"[PropWindow.SaveList] -- saved props to file: {propListFile}");
+                
+                RfPlugin.Log($"[PropWindow.SaveList] -- saved props to file: {__instance.propListFile}");
                 foreach (var path in contents)
                     RfPlugin.Log($"                       - {path}");
             }

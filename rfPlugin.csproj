@@ -18,11 +18,13 @@
   <!-- TODO: currently uses hard paths on my system, yippie -->
     
   <ItemGroup>
-    <Reference Include="Assembly-CSharp"> <!-- this is where VSeeFace lives -->
+    <!-- I got tired of Traverse pretty quickly, so I'm using a publicizer (BepInEx.AssemblyPublicizer) -->
+    <Reference Include="Assembly-CSharp" Publicize="true" Strip="true"> 
+      <!-- this is where VSeeFace lives -->
       <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/Assembly-CSharp.dll</HintPath>
     </Reference>
   </ItemGroup>
-
+  
   <ItemGroup>
     <Reference Include="UnityEngine.UI">
       <HintPath>C:/Users/rf/Documents/VSeeFace/VSeeFace_Data/Managed/UnityEngine.UI.dll</HintPath>
@@ -52,6 +54,7 @@
     <PackageReference Include="BepInEx.Core" Version="5.*" />
     <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
     <PackageReference Include="UnityEngine.Modules" Version="2019.4.31" IncludeAssets="compile" />
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3" PrivateAssets="all" />
   </ItemGroup>
   
   <ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">

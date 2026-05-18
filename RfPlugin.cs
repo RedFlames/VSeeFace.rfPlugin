@@ -104,6 +104,8 @@ public partial class RfPlugin : BaseUnityPlugin
         }
     }
     
+    public static void UpdateSpheres(Vector3 pos, float locScale = 1f) => UpdateSpheres(pos, new Vector3(locScale, locScale, locScale));
+
     public static void UpdateSpheres(Vector3 pos, Vector3 locScale)
     {
         int i = 1;

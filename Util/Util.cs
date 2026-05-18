@@ -23,10 +23,10 @@ public static class Patch_OpenSeeWebcamInfo
     {
         if (!RfPlugin.SuppressOtherLogSpam)
             return;
-        var field = Traverse.Create(typeof(OpenSee.OpenSeeWebcamInfo)).Field<bool>("dumpJsonStatic");
-        if (field.Value == true)
+        
+        if (OpenSee.OpenSeeWebcamInfo.dumpJsonStatic == true)
             RfPlugin.LogWarn("Suppressing OpenSee.OpenSeeWebcamInfo.ListCameraDetails JSON Dumps...");
-        field.Value = false;
+        OpenSee.OpenSeeWebcamInfo.dumpJsonStatic = false;
     }
 }
 

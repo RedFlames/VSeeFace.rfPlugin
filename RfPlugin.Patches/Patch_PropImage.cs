@@ -53,12 +53,7 @@ public partial class RfPlugin
         static void LateUpdate_Postfix(PropImage __instance)
         {
             var log = true;
-            var dragged = Traverse.Create(__instance.prop).Field<bool>("dragged").Value;
             var image = __instance.GetComponent<RawImage>();
-            
-            // hide spheres from ray
-            if (dragged)
-                SpheresVisible = false;
             
             attachedBone = null;
             
@@ -88,8 +83,7 @@ public partial class RfPlugin
             if (targetProp == null)
             {
                 targetProp = VSeeFaceHelper.SpawnProp(__instance.prop.spriteTexture);
-                
-                Traverse.Create(targetProp).Field<Transform>("attachedBone").Value = attachedBone;
+                targetProp.attachedBone = attachedBone;
             }
             
             // all of this is taken from uhhh an EndDrag somewhere in VSeeFace
@@ -125,17 +119,15 @@ public partial class RfPlugin
             float f = Vector3.Dot(__instance.transform.forward, normalized);
             f = Mathf.Sign(f) * Mathf.Sqrt(Mathf.Abs(f));
             
-            var sprite = Traverse.Create(targetProp).Field<Transform>("sprite").Value;
-            sprite.localScale = Vector3.Scale(spriteScale, new Vector3(f, 1f, 1f));
+            targetProp.sprite.localScale = Vector3.Scale(spriteScale, new Vector3(f, 1f, 1f));
             
             // unhide the spheres again and update pos / scale
 
             SpheresVisible = true;
 
             var spherePos = attachedBone.TransformPoint(attachmentRay.origin);
-            var sphereScale = new Vector3(spriteScale.x, spriteScale.y, (spriteScale.x + spriteScale.y)/2f) * .4f;
             
-            RfPlugin.UpdateSpheres(spherePos, sphereScale);
+            RfPlugin.UpdateSpheres(spherePos, 0.4f * (spriteScale.x + spriteScale.y)/2f);
             
             //LogWarn($"-- LATE UPDATE -- {_Sphere} {_Sphere.transform.localScale:R} {spriteScale.x:R} {spriteScale.y} {spriteScale.z}");
         
