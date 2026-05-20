@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
-using rfPlugin.VSeeFace.UI;
+//using rfPlugin.VSeeFace.UI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+
+using UObj = UnityEngine.Object;
 
 namespace rfPlugin.VSeeFace;
 
@@ -51,32 +53,32 @@ public partial class VSeeFaceHelper
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreateMenuButton before Init!");
         
-        var menuRightFirst = MainUI.menuRight.transform.GetChild(0);
-        
-        GameObject newBtn = GameObject.Instantiate(menuRightFirst.gameObject);
+        GameObject newBtn = UObj.Instantiate(MainUI.menuRight.GetChildWithComponent<Button>(), parent: MainUI.menuRight.transform);
         AddedMenuButtons.Add(newBtn);
         
-        newBtn.transform.SetParent(MainUI.menuRight.transform, false);
+        //newBtn.transform.SetParent(MainUI.menuRight.transform, false);
         
         siblingIndex = Math.Min(siblingIndex, MainUI.menuRight.transform.childCount-1);
         
         if (siblingIndex >= 0)
             newBtn.transform.SetSiblingIndex(siblingIndex);
-
+        
         newBtn.SetActive(true);
         
         Text textComp = newBtn.GetComponentInChildren<Text>();
         if (textComp != null)
             textComp.text = text;
+        else
+            RfPlugin.LogError($"Could not find Text component for new rightMenu button '{text}'");
         
         RfPlugin.LogGameObject("New Button added", newBtn);
         RfPlugin.LogComponent("newBtn.Text", textComp);
         
         Button buttonComp = newBtn.GetComponent<Button>();
         RfPlugin.LogComponent("btn before", buttonComp);
-        
-        GameObject.DestroyImmediate(buttonComp);
 
+        UObj.DestroyImmediate(buttonComp);
+        
         buttonComp = newBtn.AddComponent<Button>();
         RfPlugin.LogComponent("btn after", buttonComp);
         
@@ -88,9 +90,105 @@ public partial class VSeeFaceHelper
     
     }
 
+    public static float PropSettingsOffset = 0;
+    public static RectTransform PropSettingsOrigRT;
+
+    public static GameObject CreatePropSetting<T>(string text, UnityEngine.Events.UnityAction callback, int siblingIndex = -1)
+    where T : UObj
+    {
+        if (!initialized)
+            RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropSetting before Init!");
+        
+        GameObject newObj;
+        
+        // this is mega pointless
+        bool isButton = typeof(Button).IsAssignableFrom(typeof(T));
+        bool isSlider = typeof(Slider).IsAssignableFrom(typeof(T));
+        //bool isCheckbox = typeof(Checkbox).IsAssignableFrom(typeof(T));
+        
+        if (isButton)
+            newObj = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Button>().transform.gameObject, parent: MainUI.propSettings.transform);
+            //newObj = UObj.Instantiate(MainUI.propSettings.GetChildWithComponent<Button>(), parent: MainUI.propSettings.transform);
+        else if (isSlider)
+        {
+            
+            newObj = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Slider>().transform.parent.gameObject, parent: MainUI.propSettings.transform);
+            //newObj = UObj.Instantiate(MainUI.propSettings.TransChildren().First(ch => ch.GetComponentInChildren<Slider>()), parent: MainUI.propSettings.transform);
+        }
+        else
+        {
+            RfPlugin.LogError($"Cannot determine what UI element to instantiate as '{typeof(T)}', sorry.");
+            return null;
+        }
+        
+        //TODO
+        //AddedMenuButtons.Add(newBtn);
+        
+        //newBtn.transform.SetParent(MainUI.menuRight.transform, false);
+        
+        siblingIndex = Math.Min(siblingIndex, MainUI.propSettings.transform.childCount-1);
+        
+        if (siblingIndex >= 0)
+            newObj.transform.SetSiblingIndex(siblingIndex);
+        
+        newObj.SetActive(true);
+        
+        Text textComp = newObj.GetComponentInChildren<Text>();
+        if (textComp != null)
+            textComp.text = text;
+        else
+            RfPlugin.LogError($"Could not find Text component for new prop setting '{text}'");
+        
+        RfPlugin.LogGameObject($"New PS {typeof(T)} = {newObj.GetType()} added", newObj);
+        RfPlugin.LogComponent("newObj.Text", textComp);
+        
+        if (isButton)
+        {
+            Button comp = newObj.GetComponent<Button>();
+            
+            //UObj.DestroyImmediate(comp);
+            
+            //comp = newObj.AddComponent<Button>();
+            
+            comp.onClick.RemoveAllListeners();
+            comp.onClick = new();
+            comp.onClick.AddListener(callback);
+        } else if (isSlider)
+        {
+            Slider comp = newObj.GetComponentInChildren<Slider>();
+            RfPlugin.LogComponent("Slider comp in newObj children", comp);
+
+            var parent = comp.transform.gameObject;
+            RfPlugin.LogGameObject("Slider parent in newObj children", parent);
+            RfPlugin.LogComponent("Slider parent Slider in newObj children", parent.GetComponent<Slider>());
+            
+            //UObj.DestroyImmediate(comp);
+            
+            //comp = parent.AddComponent<Slider>();
+            
+            comp.onValueChanged.RemoveAllListeners();
+            comp.onValueChanged = new();
+            // hmmmmm
+            //comp.onValueChanged.AddListener(callback);
+        }
+
+        PropSettingsOrigRT ??= UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
+        
+        var rt = newObj.transform.GetComponent<RectTransform>();
+        PropSettingsOffset += rt.rect.height;
+        
+        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, rt.anchoredPosition.y - PropSettingsOffset);
+
+        var pt = MainUI.propSettings.transform.GetComponent<RectTransform>();
+        pt.sizeDelta = new Vector2(pt.sizeDelta.x, PropSettingsOrigRT.sizeDelta.y + PropSettingsOffset);
+        
+        return newObj;
+    
+    }
+
     public static PropWindow CreateNewPropWindow()
     {
-        var window = GameObject.Instantiate(MainPropWindow);
+        var window = UObj.Instantiate(MainPropWindow);
         window.transform.parent = MainUI.Settings.settings.transform;
         return window;
     }
@@ -103,7 +201,7 @@ public partial class VSeeFaceHelper
         if (window == null)
             window = MainPropWindow;
         
-        var newEntry = GameObject.Instantiate(window.propButtonPrefab, window.content);
+        var newEntry = UObj.Instantiate(window.propButtonPrefab, window.content);
         
         PropButton componentInChildren = newEntry.GetComponentInChildren<PropButton>();
 

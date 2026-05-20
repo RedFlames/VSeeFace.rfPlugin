@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using BepInEx;
 using BepInEx.Logging;
@@ -70,14 +71,31 @@ public partial class RfPlugin : BaseUnityPlugin
         // To see what the Detect shader looks like in practice.
         // Might be missing the material setup stuff from RaycastMesh until you start attaching a prop.
         //Camera.main.SetReplacementShader(Shader.Find("Custom/Detect"), "RenderType");
-
+        
         for (int i = 0; i < 5; i++)
             _Spheres.Add(UnityHelper.CreateTransparentSphere(alpha: .05f + .1f * i));
     
         // --- Add new right-menu button(s) ---
         var btn = VSeeFaceHelper.CreateMenuButton("test", btn_callback, 3);
         var btn2 = VSeeFaceHelper.CreateMenuButton("test2", btn_callback2);
-    
+        
+        var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("test3", btn_callback);
+        var btn4 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", btn_callback);
+        var slider = btn4.GetComponentInChildren<Slider>();
+        
+        LogComponent("Slider", slider);
+        LogGameObject("Slider inst", btn4);
+        LogGameObject("Slider parent", slider.transform.parent.gameObject);
+        
+        slider.onValueChanged.AddListener(slider_callback);
+
+        btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
+        slider = btn4.GetComponentInChildren<Slider>();
+        LogComponent("Slider", slider);
+        LogGameObject("Slider inst", btn4);
+        LogGameObject("Slider parent", slider.transform.parent.gameObject);
+        slider.onValueChanged.AddListener(slider_callback);
+
     }
     
     private static bool _spheresVisible = false;
@@ -194,6 +212,13 @@ public partial class RfPlugin : BaseUnityPlugin
     {
         var btn = VSeeFaceHelper.CreatePropButton("Zesting", ExtraPropWindow);
         
+    }
+    
+    
+    public void slider_callback(float f)
+    {
+        
+        LogWarn($"slider: {f}");
     }
     
 }

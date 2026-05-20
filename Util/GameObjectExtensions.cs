@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using HarmonyLib;
 using UnityEngine;
 
 namespace rfPlugin;
@@ -32,12 +33,88 @@ public static class GameObjectExtensions
             return ret;
         
         for (int i = 0; i < go.transform.childCount; i++)
-        {
-            Transform tf = go.transform.GetChild(i);
-            if (tf != null && tf.gameObject != null)
-                ret.Add(go.transform.GetChild(i).gameObject);
-        }
+            if (go.GetChildObject(i) is GameObject gogo)
+                ret.Add(gogo);
 
         return ret;
     }
+    
+    public static GameObject GetChildObject(this GameObject go, int index)
+    {
+        if (go == null || go.transform == null || index >= go.transform.childCount || index < 0)
+            return null;
+        return go.transform.GetChild(index).gameObject;
+    }
+
+    
+    public static GameObject GetChild<T>(this GameObject go, int index = 0)
+    where T : Object
+    {
+        if (go == null)
+            return null;
+        int i = 0;
+        
+        RfPlugin.LogWarn($"Trying to GetChild<{typeof(T)}> on {go.name}");
+        
+        foreach (var gogo in go.TransChildren())
+        {
+            RfPlugin.LogWarn($"Checking trans child {gogo.name} of {go.name}: {gogo is T} {gogo is GameObject}");
+            
+            if (gogo.GetType().IsAssignableFrom(typeof(T)))
+            {
+                if (i == index)
+                    return gogo;
+                i++;
+            }
+        }
+        return null;
+    }
+
+    public static GameObject GetChildWithObject<T>(this GameObject go, int index = 0)
+    where T : Object
+    {
+        if (go == null)
+            return null;
+        int i = 0;
+        
+        RfPlugin.LogWarn($"Trying to GetChildWithObject<{typeof(T)}> on {go.name}");
+        
+        foreach (var gogo in go.TransChildren())
+        {
+            RfPlugin.LogWarn($"Checking trans child {gogo.name} of {go.name}: {gogo is T} {gogo is GameObject}");
+            
+            if (gogo.GetChild<T>() is T)
+            {
+                if (i == index)
+                    return gogo;
+                i++;
+            }
+        }
+        return null;
+    }
+    
+    public static GameObject GetChildWithComponent<T>(this GameObject go, int index = 0)
+    where T : Object
+    {
+        if (go == null)
+            return null;
+        int i = 0;
+        
+        RfPlugin.LogWarn($"Trying to GetChildWithComponent<{typeof(T)}> on {go.name}");
+        
+        foreach (var gogo in go.TransChildren())
+        {
+            RfPlugin.LogWarn($"Checking trans child {gogo.name} of {go.name}: {gogo is T} {gogo is GameObject}");
+            gogo.GetComponents<Object>().Do(c => RfPlugin.LogWarn($"Child comp is {c.name} {c.GetType()} {c is T}"));
+            
+            if (gogo.GetComponent<T>() is T)
+            {
+                if (i == index)
+                    return gogo;
+                i++;
+            }
+        }
+        return null;
+    }
+
 }
