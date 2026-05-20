@@ -5,6 +5,7 @@ using HarmonyLib;
 //using rfPlugin.VSeeFace.UI;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Networking.Match;
 using UnityEngine.UI;
 
 using UObj = UnityEngine.Object;
@@ -29,6 +30,10 @@ public partial class VSeeFaceHelper
     // keep track of buttons added to right menu
     public static List<GameObject> AddedMenuButtons = [];
     
+    public static GameObject PrefabMenuButton { get; private set; }
+    public static GameObject PrefabPropSettingsButton { get; private set; }
+    public static GameObject PrefabPropSettingsSlider { get; private set; }
+    
     private static bool initialized = false;
     
     public static void Init()
@@ -44,6 +49,13 @@ public partial class VSeeFaceHelper
         else
             RfPlugin.LogError($"Failed to get PropWindow component from Props Window GameObject!");
         
+        PrefabMenuButton = UObj.Instantiate(MainUI.menuRight.GetChildWithComponent<Button>(), null);
+        PrefabMenuButton.SetActive(false);
+        PrefabPropSettingsButton = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Button>().transform.gameObject, null);
+        PrefabPropSettingsButton.SetActive(false);
+        PrefabPropSettingsSlider = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Slider>().transform.parent.gameObject, null);
+        PrefabPropSettingsSlider.SetActive(false);
+        
         RfPlugin.Log("VSeeFaceHelper initialized.");
         initialized = true;
     }
@@ -53,7 +65,7 @@ public partial class VSeeFaceHelper
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreateMenuButton before Init!");
         
-        GameObject newBtn = UObj.Instantiate(MainUI.menuRight.GetChildWithComponent<Button>(), parent: MainUI.menuRight.transform);
+        GameObject newBtn = UObj.Instantiate(PrefabMenuButton, parent: MainUI.menuRight.transform);
         AddedMenuButtons.Add(newBtn);
         
         //newBtn.transform.SetParent(MainUI.menuRight.transform, false);
@@ -74,16 +86,16 @@ public partial class VSeeFaceHelper
         RfPlugin.LogGameObject("New Button added", newBtn);
         RfPlugin.LogComponent("newBtn.Text", textComp);
         
-        Button buttonComp = newBtn.GetComponent<Button>();
+        Button buttonComp = newBtn.GetComponentInChildren<Button>();
         RfPlugin.LogComponent("btn before", buttonComp);
 
-        UObj.DestroyImmediate(buttonComp);
+        //UObj.DestroyImmediate(buttonComp);
         
-        buttonComp = newBtn.AddComponent<Button>();
+        //buttonComp = newBtn.AddComponent<Button>();
         RfPlugin.LogComponent("btn after", buttonComp);
         
-        //btn.onClick.RemoveAllListeners();
-        //btn.onClick = new();
+        buttonComp.onClick.RemoveAllListeners();
+        buttonComp.onClick = new();
         buttonComp.onClick.AddListener(callback);
         
         return newBtn;
@@ -93,11 +105,13 @@ public partial class VSeeFaceHelper
     public static float PropSettingsOffset = 0;
     public static RectTransform PropSettingsOrigRT;
 
-    public static GameObject CreatePropSetting<T>(string text, UnityEngine.Events.UnityAction callback, int siblingIndex = -1)
+    public static GameObject CreatePropSetting<T>(string text, UnityEngine.Events.UnityAction callback = null, PropSettingsWindow window = null, int siblingIndex = -1)
     where T : UObj
     {
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropSetting before Init!");
+        
+        window ??= MainUI.propSettings.GetComponent<PropSettingsWindow>();
         
         GameObject newObj;
         
@@ -107,12 +121,12 @@ public partial class VSeeFaceHelper
         //bool isCheckbox = typeof(Checkbox).IsAssignableFrom(typeof(T));
         
         if (isButton)
-            newObj = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Button>().transform.gameObject, parent: MainUI.propSettings.transform);
+            newObj = UObj.Instantiate(PrefabPropSettingsButton, parent: window.transform);
             //newObj = UObj.Instantiate(MainUI.propSettings.GetChildWithComponent<Button>(), parent: MainUI.propSettings.transform);
         else if (isSlider)
         {
             
-            newObj = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Slider>().transform.parent.gameObject, parent: MainUI.propSettings.transform);
+            newObj = UObj.Instantiate(PrefabPropSettingsSlider, parent: window.transform);
             //newObj = UObj.Instantiate(MainUI.propSettings.TransChildren().First(ch => ch.GetComponentInChildren<Slider>()), parent: MainUI.propSettings.transform);
         }
         else
@@ -126,7 +140,7 @@ public partial class VSeeFaceHelper
         
         //newBtn.transform.SetParent(MainUI.menuRight.transform, false);
         
-        siblingIndex = Math.Min(siblingIndex, MainUI.propSettings.transform.childCount-1);
+        siblingIndex = Math.Min(siblingIndex, window.transform.childCount-1);
         
         if (siblingIndex >= 0)
             newObj.transform.SetSiblingIndex(siblingIndex);
@@ -144,7 +158,7 @@ public partial class VSeeFaceHelper
         
         if (isButton)
         {
-            Button comp = newObj.GetComponent<Button>();
+            Button comp = newObj.GetComponentInChildren<Button>();
             
             //UObj.DestroyImmediate(comp);
             
@@ -171,7 +185,8 @@ public partial class VSeeFaceHelper
             // hmmmmm
             //comp.onValueChanged.AddListener(callback);
         }
-
+        
+        //TODO
         PropSettingsOrigRT ??= UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
         
         var rt = newObj.transform.GetComponent<RectTransform>();
@@ -185,11 +200,32 @@ public partial class VSeeFaceHelper
         return newObj;
     
     }
-
+    
     public static PropWindow CreateNewPropWindow()
     {
-        var window = UObj.Instantiate(MainPropWindow);
-        window.transform.parent = MainUI.Settings.settings.transform;
+        var window = UObj.Instantiate(MainPropWindow, MainUI.Settings.settings.transform);
+        return window;
+    }
+    
+    public static PropSettingsWindow CreateNewSettingsWindow()
+    {
+        var comp = MainUI.propSettings.GetComponent<PropSettingsWindow>();
+        
+        var origChildren = comp.gameObject.TransChildren();
+        foreach (var c in origChildren)
+        {
+            c.transform.SetParent(null);
+        }
+
+        var window = UObj.Instantiate(comp, MainUI.Settings.settings.transform);
+        
+        foreach (var c in origChildren)
+        {
+            c.transform.SetParent(comp.gameObject.transform);
+        }
+        
+        window.gameObject.SetActive(true);
+        
         return window;
     }
 

@@ -98,6 +98,8 @@ public class MainUI
     public GameObject menuRight;
     public Settings Settings;
     public GameObject propsWindow;
+    public GameObject propsWindowScrollView;
+    public GameObject propsWindowScrollViewContent;
     public GameObject propSettings;
     public GameObject propDragText;
     public GameObject perfMonitor;
@@ -117,9 +119,15 @@ public class MainUI
         RfPlugin.LogGameObject("UI MainUI menuRight found:", menuRight);
 
         Settings = new();
-
+        
         propsWindow = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window");
         RfPlugin.LogGameObject("UI MainUI propsWindow found:", propsWindow);
+        
+        propsWindowScrollView = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/Scroll View");
+        RfPlugin.LogGameObject("UI MainUI propsWindowScrollView found:", propsWindowScrollView);
+        
+        propsWindowScrollViewContent = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/Scroll View/Viewport/Content");
+        RfPlugin.LogGameObject("UI MainUI propsWindowScrollViewContent found:", propsWindowScrollViewContent);
 
         propSettings = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Prop Settings");
         RfPlugin.LogGameObject("UI MainUI propSettings found:", propSettings);

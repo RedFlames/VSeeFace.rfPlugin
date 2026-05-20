@@ -93,6 +93,8 @@ public static class GameObjectExtensions
         return null;
     }
     
+    // FIXME (?) I dunno if I should just accept that traversing to a specific game object is just a huge mess,
+    // but not hide it away in these helpers because they now confuse me more when I look "in-game" what the hierarchies are...
     public static GameObject GetChildWithComponent<T>(this GameObject go, int index = 0)
     where T : Object
     {

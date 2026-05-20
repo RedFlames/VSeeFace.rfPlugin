@@ -44,6 +44,7 @@ public partial class RfPlugin : BaseUnityPlugin
     private static Prop targetProp;
 
     public static PropWindow ExtraPropWindow { get; private set; }
+    public static PropSettingsWindow ExtraSettingsWindow { get; private set; }
     
     private static List<GameObject> _Spheres = [];
     
@@ -63,6 +64,8 @@ public partial class RfPlugin : BaseUnityPlugin
         VSeeFaceHelper.Init();
 
         ExtraPropWindow = VSeeFaceHelper.CreateNewPropWindow();
+
+        ExtraSettingsWindow = VSeeFaceHelper.CreateNewSettingsWindow();
         
         // just some debugging log dumps to find VSeeFace stuff
         //VSeeFaceHelper.DumpObjectsByName();
@@ -80,7 +83,7 @@ public partial class RfPlugin : BaseUnityPlugin
         var btn2 = VSeeFaceHelper.CreateMenuButton("test2", btn_callback2);
         
         var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("test3", btn_callback);
-        var btn4 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", btn_callback);
+        var btn4 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", null);
         var slider = btn4.GetComponentInChildren<Slider>();
         
         LogComponent("Slider", slider);
@@ -96,6 +99,10 @@ public partial class RfPlugin : BaseUnityPlugin
         LogGameObject("Slider parent", slider.transform.parent.gameObject);
         slider.onValueChanged.AddListener(slider_callback);
 
+        var btn5 = VSeeFaceHelper.CreatePropSetting<Button>("test3", btn_callback3, ExtraSettingsWindow);
+        var btn6 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", null, ExtraSettingsWindow);
+        btn6.GetComponentInChildren<Slider>().onValueChanged.AddListener(slider_callback2);
+    
     }
     
     private static bool _spheresVisible = false;
@@ -210,8 +217,13 @@ public partial class RfPlugin : BaseUnityPlugin
     
     public void btn_callback2()
     {
-        var btn = VSeeFaceHelper.CreatePropButton("Zesting", ExtraPropWindow);
-        
+        //var btn = VSeeFaceHelper.CreatePropButton("Zesting", ExtraPropWindow);
+        LogWarn($"btn_callback2");
+    }
+
+    public void btn_callback3()
+    {
+        LogWarn($"btn_callback3");
     }
     
     
@@ -219,6 +231,13 @@ public partial class RfPlugin : BaseUnityPlugin
     {
         
         LogWarn($"slider: {f}");
+    }
+
+    
+    public void slider_callback2(float f)
+    {
+        
+        LogWarn($"slider2222222: {f}");
     }
     
 }
