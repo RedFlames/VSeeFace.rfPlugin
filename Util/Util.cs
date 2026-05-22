@@ -29,7 +29,7 @@ public static class Patch_OpenSeeWebcamInfo
         OpenSee.OpenSeeWebcamInfo.dumpJsonStatic = false;
     }
 }
-
+/*
 [HarmonyPatch(typeof(Leap.Unity.LeapServiceProvider), "Update")]
 public static class Patch_LeapServiceProvider
 {
@@ -43,4 +43,4 @@ public static class Patch_LeapServiceProvider
         logged = true;
         return false;
     }
-}
+}*/

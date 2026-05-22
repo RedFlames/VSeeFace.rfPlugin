@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+
 using HarmonyLib;
+
 //using rfPlugin.VSeeFace.UI;
+
 using TMPro;
+
 using UnityEngine;
-using UnityEngine.Networking.Match;
 using UnityEngine.UI;
 
 using UObj = UnityEngine.Object;
@@ -24,6 +27,7 @@ public partial class VSeeFaceHelper
     
     // VSeeFace's instance of its PropWindow class
     public static PropWindow MainPropWindow;
+    public static PropSettingsWindow MainPropSettingsWindow;
 
     public static List<PropButtonWrapper> PropButtons = [];
     
@@ -56,11 +60,24 @@ public partial class VSeeFaceHelper
         PrefabPropSettingsSlider = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Slider>().transform.parent.gameObject, null);
         PrefabPropSettingsSlider.SetActive(false);
         
+        var propSettings = MainUI.propSettings.GetComponent<PropSettingsWindow>();
+        if (propSettings)
+            MainPropSettingsWindow = propSettings;
+        else
+            RfPlugin.LogError($"Failed to get MainPropSettingsWindow component from Props settings Window GameObject!");
+        
+        var origRect = UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
+        PropSettingsOrigRT[MainPropSettingsWindow.GetInstanceID()] = origRect;
+        
+        var rt = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
+        PropSettingsOffset[MainPropSettingsWindow.GetInstanceID()] = rt.anchoredPosition.y;
+        RfPlugin.LogError($"PrefabPropSettingsButton is at {rt.anchoredPosition.y}");
+        
         RfPlugin.Log("VSeeFaceHelper initialized.");
         initialized = true;
     }
     
-    public static GameObject CreateMenuButton(string text, UnityEngine.Events.UnityAction callback, int siblingIndex = -1)
+    public static GameObject CreateMenuButton(string text, int siblingIndex = -1)
     {
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreateMenuButton before Init!");
@@ -96,22 +113,21 @@ public partial class VSeeFaceHelper
         
         buttonComp.onClick.RemoveAllListeners();
         buttonComp.onClick = new();
-        buttonComp.onClick.AddListener(callback);
         
         return newBtn;
     
     }
-
-    public static float PropSettingsOffset = 0;
-    public static RectTransform PropSettingsOrigRT;
-
-    public static GameObject CreatePropSetting<T>(string text, UnityEngine.Events.UnityAction callback = null, PropSettingsWindow window = null, int siblingIndex = -1)
+    
+    public static Dictionary<int, float> PropSettingsOffset = [];
+    public static Dictionary<int, RectTransform> PropSettingsOrigRT = [];
+    
+    public static GameObject CreatePropSetting<T>(string text, PropSettingsWindow window = null, int siblingIndex = -1)
     where T : UObj
     {
         if (!initialized)
             RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropSetting before Init!");
         
-        window ??= MainUI.propSettings.GetComponent<PropSettingsWindow>();
+        window ??= MainPropSettingsWindow;
         
         GameObject newObj;
         
@@ -159,43 +175,42 @@ public partial class VSeeFaceHelper
         if (isButton)
         {
             Button comp = newObj.GetComponentInChildren<Button>();
-            
-            //UObj.DestroyImmediate(comp);
-            
-            //comp = newObj.AddComponent<Button>();
-            
             comp.onClick.RemoveAllListeners();
             comp.onClick = new();
-            comp.onClick.AddListener(callback);
         } else if (isSlider)
         {
             Slider comp = newObj.GetComponentInChildren<Slider>();
-            RfPlugin.LogComponent("Slider comp in newObj children", comp);
-
-            var parent = comp.transform.gameObject;
-            RfPlugin.LogGameObject("Slider parent in newObj children", parent);
-            RfPlugin.LogComponent("Slider parent Slider in newObj children", parent.GetComponent<Slider>());
-            
-            //UObj.DestroyImmediate(comp);
-            
-            //comp = parent.AddComponent<Slider>();
-            
             comp.onValueChanged.RemoveAllListeners();
             comp.onValueChanged = new();
-            // hmmmmm
-            //comp.onValueChanged.AddListener(callback);
         }
         
-        //TODO
-        PropSettingsOrigRT ??= UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
+        RectTransform origRect;
+        if (!PropSettingsOrigRT.TryGetValue(window.GetInstanceID(), out origRect))
+        {
+            origRect = UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
+            
+            PropSettingsOrigRT.Add(window.GetInstanceID(), origRect);
+        }
         
         var rt = newObj.transform.GetComponent<RectTransform>();
-        PropSettingsOffset += rt.rect.height;
         
-        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, rt.anchoredPosition.y - PropSettingsOffset);
-
-        var pt = MainUI.propSettings.transform.GetComponent<RectTransform>();
-        pt.sizeDelta = new Vector2(pt.sizeDelta.x, PropSettingsOrigRT.sizeDelta.y + PropSettingsOffset);
+        float elementOffset;
+        
+        if (!PropSettingsOffset.TryGetValue(window.GetInstanceID(), out elementOffset))
+        {
+            var preRT = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
+            elementOffset = preRT.anchoredPosition.y;
+        }
+        elementOffset -= rt.rect.height;
+        
+        PropSettingsOffset[window.GetInstanceID()] = elementOffset;
+        RfPlugin.LogError($"PrefabPropSettingsButton is at {elementOffset}");
+        
+        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, elementOffset);
+        
+        var pt = window.transform.GetComponent<RectTransform>();
+        pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y + rt.rect.height);
+        
         
         return newObj;
     
@@ -212,8 +227,11 @@ public partial class VSeeFaceHelper
         var comp = MainUI.propSettings.GetComponent<PropSettingsWindow>();
         
         var origChildren = comp.gameObject.TransChildren();
+        float subtractSize = 0f;
         foreach (var c in origChildren)
         {
+            var rt = c.transform.GetComponent<RectTransform>();
+            subtractSize += rt.rect.height;
             c.transform.SetParent(null);
         }
 
@@ -223,6 +241,14 @@ public partial class VSeeFaceHelper
         {
             c.transform.SetParent(comp.gameObject.transform);
         }
+
+        var pt = window.transform.GetComponent<RectTransform>();
+        pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y - subtractSize);
+        
+        PropSettingsOrigRT.Add(window.GetInstanceID(), pt);
+
+        var preRT = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
+        PropSettingsOffset[window.GetInstanceID()] = preRT.anchoredPosition.y + subtractSize;
         
         window.gameObject.SetActive(true);
         
@@ -249,7 +275,7 @@ public partial class VSeeFaceHelper
         newWrapped.DebugMe();
         RfPlugin.LogWarn("PropButtonWrapper.DebugMe newWrapped2");
         newWrapped2.DebugMe();
-
+        
         componentInChildren.window = window;
         //Prop component = gO_Text.GetComponent<Prop>();
         //component.currentSettings = PropManager.Singleton.baseSettings;

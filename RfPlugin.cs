@@ -79,18 +79,18 @@ public partial class RfPlugin : BaseUnityPlugin
             _Spheres.Add(UnityHelper.CreateTransparentSphere(alpha: .05f + .1f * i));
     
         // --- Add new right-menu button(s) ---
-        var btn = VSeeFaceHelper.CreateMenuButton("test", btn_callback, 3);
-        var btn2 = VSeeFaceHelper.CreateMenuButton("test2", btn_callback2);
+        var btn = VSeeFaceHelper.CreateMenuButton("test", 3).OnClick(btn_callback);
+        var btn2 = VSeeFaceHelper.CreateMenuButton("test2").OnClick(btn_callback2);
         
-        var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("test3", btn_callback);
-        var btn4 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", null);
+        var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("test3").OnClick(btn_callback);
+        var btn4 = VSeeFaceHelper.CreatePropSetting<Slider>("test4").OnSlide(slider_callback);
         var slider = btn4.GetComponentInChildren<Slider>();
         
         LogComponent("Slider", slider);
         LogGameObject("Slider inst", btn4);
         LogGameObject("Slider parent", slider.transform.parent.gameObject);
         
-        slider.onValueChanged.AddListener(slider_callback);
+        //slider.onValueChanged.AddListener(slider_callback);
 
         btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
         slider = btn4.GetComponentInChildren<Slider>();
@@ -99,10 +99,8 @@ public partial class RfPlugin : BaseUnityPlugin
         LogGameObject("Slider parent", slider.transform.parent.gameObject);
         slider.onValueChanged.AddListener(slider_callback);
 
-        var btn5 = VSeeFaceHelper.CreatePropSetting<Button>("test3", btn_callback3, ExtraSettingsWindow);
-        var btn6 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", null, ExtraSettingsWindow);
-        btn6.GetComponentInChildren<Slider>().onValueChanged.AddListener(slider_callback2);
-    
+        var btn5 = VSeeFaceHelper.CreatePropSetting<Button>("test3", ExtraSettingsWindow).OnClick(btn_callback3);
+        var btn6 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", ExtraSettingsWindow).OnSlide(slider_callback2);    
     }
     
     private static bool _spheresVisible = false;

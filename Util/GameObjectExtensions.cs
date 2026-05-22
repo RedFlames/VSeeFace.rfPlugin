@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace rfPlugin;
 
@@ -24,6 +25,39 @@ public static class GameObjectExtensions
         return string.Join("/", parNames);
     }
     
+    public static GameObject OnClick(this GameObject go, UnityEngine.Events.UnityAction callback, bool removeAll = true)
+    {
+        if (go.GetComponentInChildren<Button>() is Button comp)
+        {
+            if (removeAll)
+            {
+                comp.onClick.RemoveAllListeners();
+                comp.onClick = new();
+            }
+            comp.onClick.AddListener(callback);
+        } else
+        {
+            RfPlugin.LogWarn("Setting OnClick on non-button not implemented");
+        }
+        return go;
+    }
+    
+    public static GameObject OnSlide(this GameObject go, UnityEngine.Events.UnityAction<float> callback, bool removeAll = true)
+    {
+        if (go.GetComponentInChildren<Slider>() is Slider comp)
+        {
+            if (removeAll)
+            {
+                comp.onValueChanged.RemoveAllListeners();
+                comp.onValueChanged = new();
+            }
+            comp.onValueChanged.AddListener(callback);
+        } else
+        {
+            RfPlugin.LogWarn("Setting OnSlide on non-slider not implemented");
+        }
+        return go;
+    }
     // get all children of the object's transform
     public static List<GameObject> TransChildren(this GameObject go)
     {
