@@ -1,13 +1,15 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
+
 using BepInEx;
 using BepInEx.Logging;
+
 using HarmonyLib;
+
 using rfPlugin.VSeeFace;
+
 using UnityEngine;
 using UnityEngine.UI;
-using uWindowCapture;
 
 namespace rfPlugin;
 

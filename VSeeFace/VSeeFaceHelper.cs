@@ -2,15 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using HarmonyLib;
-
-//using rfPlugin.VSeeFace.UI;
-
 using TMPro;
 
 using UnityEngine;
 using UnityEngine.UI;
-
 using UObj = UnityEngine.Object;
 
 namespace rfPlugin.VSeeFace;

@@ -1,6 +1,4 @@
 
-
-using System;
 using UnityEngine;
 
 namespace rfPlugin.VSeeFace;
@@ -8,7 +6,7 @@ namespace rfPlugin.VSeeFace;
 public class PropButtonWrapper
 {
     public PropButton Wrapped { get; private set; }
-
+    
     public GameObject Parent { get; private set; }
     
     public PropButtonWrapper(PropButton wrap)

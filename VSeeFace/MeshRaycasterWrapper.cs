@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+
 using UnityEngine;
 
 namespace rfPlugin.VSeeFace;
@@ -26,7 +27,7 @@ public class MeshRaycasterWrapper
             {
                 return -1f;
             }
-
+            
             if (hitRenderer is MeshRenderer)
             {
                 hitBone = hitRenderer.transform;

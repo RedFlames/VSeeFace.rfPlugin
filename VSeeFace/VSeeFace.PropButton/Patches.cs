@@ -1,12 +1,12 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Emit;
-using System.Runtime.CompilerServices;
+
 using BepInEx;
+
 using HarmonyLib;
-using UnityEngine;
+
 using UnityEngine.UI;
 
 namespace rfPlugin.VSeeFace;
