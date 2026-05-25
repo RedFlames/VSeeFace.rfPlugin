@@ -46,7 +46,7 @@ public partial class RfPlugin : BaseUnityPlugin
     private static Prop targetProp;
 
     public static PropWindow ExtraPropWindow { get; private set; }
-    public static PropSettingsWindow ExtraSettingsWindow { get; private set; }
+    public static PropSettingsWindowWrapper ExtraSettingsWindow { get; private set; }
     
     public static bool AdvancedPropSettingsVisible { 
         get { return _advancedPropSettingsVisible; }
@@ -79,7 +79,7 @@ public partial class RfPlugin : BaseUnityPlugin
 
         ExtraPropWindow = VSeeFaceHelper.CreateNewPropWindow();
 
-        ExtraSettingsWindow = VSeeFaceHelper.CreateNewSettingsWindow();
+        ExtraSettingsWindow = PropSettingsWindowWrapper.CreateNewSettingsWindow();
         
         // just some debugging log dumps to find VSeeFace stuff
         //VSeeFaceHelper.DumpObjectsByName();
@@ -96,19 +96,19 @@ public partial class RfPlugin : BaseUnityPlugin
         var btn = VSeeFaceHelper.CreateMenuButton("test", 3).OnClick(btn_callback);
         var btn2 = VSeeFaceHelper.CreateMenuButton("test2").OnClick(btn_callback2);
         
-        var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("Advanced Settings").OnClick(advanced_settings_callback);
-        var testslider = VSeeFaceHelper.CreatePropSetting<Slider>("test4").OnSlide(slider_callback);
+        var btn3 = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Button>("Advanced Settings").OnClick(advanced_settings_callback);
+        var testslider = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(slider_callback);
         AddAdvancedPropSetting(testslider);
         
         //var slider = btn4.GetComponentInChildren<Slider>();
-        var adv_btn = VSeeFaceHelper.CreatePropSetting<Button>("Some button").OnClick(btn_callback3);
+        var adv_btn = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Button>("Some button").OnClick(btn_callback3);
         AddAdvancedPropSetting(adv_btn);
         
         //btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
         //slider = btn4.GetComponentInChildren<Slider>();
 
-        var btn5 = VSeeFaceHelper.CreatePropSetting<Button>("test3", ExtraSettingsWindow).OnClick(btn_callback3);
-        var btn6 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", ExtraSettingsWindow).OnSlide(slider_callback2);    
+        var btn5 = ExtraSettingsWindow.CreatePropSetting<Button>("test3").OnClick(btn_callback3);
+        var btn6 = ExtraSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(slider_callback2);    
     }
     
     private static bool _spheresVisible = false;
@@ -282,7 +282,7 @@ public partial class RfPlugin : BaseUnityPlugin
             heightChange += rt.rect.height + VSeeFaceHelper.SettingsElementSpacing;
         }
         
-        var pt = VSeeFaceHelper.MainPropSettingsWindow.transform.GetComponent<RectTransform>();
+        var pt = VSeeFaceHelper.MainPropSettingsWindowVSF.transform.GetComponent<RectTransform>();
 
         if (newVal)
         {

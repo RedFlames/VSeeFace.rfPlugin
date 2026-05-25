@@ -84,9 +84,9 @@ public partial class VSeeFaceHelper
             // duplicating logic from Draggable.LateUpdate
             if (!Draggable.escapePressed && i.target.GetSiblingIndex() == i.target.parent.childCount - 1 && Input.GetKeyUp(KeyCode.Escape))
             {
-                RfPlugin.LogDebug($"Checking if draggable is prop settings: {i.GetInstanceID()} {MainPropSettingsWindow.GetComponent<Draggable>().GetInstanceID()}");
+                RfPlugin.LogDebug($"Checking if draggable is prop settings: {i.GetInstanceID()} {MainPropSettingsWindowVSF.GetComponent<Draggable>().GetInstanceID()}");
                 // BUGFIX: The show vs. hide Prop Settings button in the Props Window wasn't updating when closing Prop Settings via Escape key.
-                if (i == MainPropSettingsWindow.GetComponent<Draggable>())
+                if (i == MainPropSettingsWindowVSF.GetComponent<Draggable>())
                 {
                     MainUI.propsWindow.showPropSettingsButton.SetActive(true);
                     MainUI.propsWindow.hidePropSettingsButton.SetActive(false);

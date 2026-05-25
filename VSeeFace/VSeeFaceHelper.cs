@@ -22,7 +22,8 @@ public partial class VSeeFaceHelper
     
     // VSeeFace's instance of its PropWindow class
     public static PropWindow MainPropWindow;
-    public static PropSettingsWindow MainPropSettingsWindow;
+    public static PropSettingsWindow MainPropSettingsWindowVSF;
+    public static PropSettingsWindowWrapper MainPropSettingsWindow;
 
     public static List<PropButtonWrapper> PropButtons = [];
     
@@ -30,8 +31,8 @@ public partial class VSeeFaceHelper
     public static List<GameObject> AddedMenuButtons = [];
     
     public static GameObject PrefabMenuButton { get; private set; }
-    public static GameObject PrefabPropSettingsButton { get; private set; }
-    public static GameObject PrefabPropSettingsSlider { get; private set; }
+    
+    public static float SettingsElementSpacing = 8f;
     
     private static bool initialized = false;
     
@@ -50,23 +51,18 @@ public partial class VSeeFaceHelper
         
         PrefabMenuButton = UObj.Instantiate(MainUI.menuRight.GetChildWithComponent<Button>(), null);
         PrefabMenuButton.SetActive(false);
-        PrefabPropSettingsButton = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Button>().transform.gameObject, null);
-        PrefabPropSettingsButton.SetActive(false);
-        PrefabPropSettingsSlider = UObj.Instantiate(MainUI.propSettings.GetComponentInChildren<Slider>().transform.parent.gameObject, null);
-        PrefabPropSettingsSlider.SetActive(false);
+        
         
         var propSettings = MainUI.propSettings.GetComponent<PropSettingsWindow>();
         if (propSettings)
-            MainPropSettingsWindow = propSettings;
+            MainPropSettingsWindowVSF = propSettings;
         else
             RfPlugin.LogError($"Failed to get MainPropSettingsWindow component from Props settings Window GameObject!");
         
-        var origRect = UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
-        PropSettingsOrigRT[MainPropSettingsWindow.GetInstanceID()] = origRect;
+        PropSettingsWindowWrapper.InitStatic();
         
-        var rt = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
-        PropSettingsOffset[MainPropSettingsWindow.GetInstanceID()] = rt.anchoredPosition.y - rt.rect.height/2f;
-        RfPlugin.LogError($"PrefabPropSettingsButton is at {rt.anchoredPosition.y}");
+        // wrapper class
+        MainPropSettingsWindow = new(propSettings);
         
         RfPlugin.Log("VSeeFaceHelper initialized.");
         initialized = true;
@@ -113,155 +109,12 @@ public partial class VSeeFaceHelper
     
     }
     
-    // PropSettingsOffset is meant to track the anchor Y necessary to hit the bottom edge of last child in a prop settings window
-    // NOT the center point of that last element because idk I don't wanna have to look up what half its size is when adding next?
-    public static Dictionary<int, float> PropSettingsOffset = [];
-    public static Dictionary<int, RectTransform> PropSettingsOrigRT = [];
-
-    public static float SettingsElementSpacing = 8f;
-    
-    public static GameObject CreatePropSetting<T>(string text, PropSettingsWindow window = null, int siblingIndex = -1)
-    where T : UObj
-    {
-        if (!initialized)
-            RfPlugin.LogError("Attempting to run VSeeFaceHelper.CreatePropSetting before Init!");
-        
-        window ??= MainPropSettingsWindow;
-        
-        GameObject newObj;
-        
-        // this is mega pointless
-        bool isButton = typeof(Button).IsAssignableFrom(typeof(T));
-        bool isSlider = typeof(Slider).IsAssignableFrom(typeof(T));
-        //bool isCheckbox = typeof(Checkbox).IsAssignableFrom(typeof(T));
-        
-        if (isButton)
-            newObj = UObj.Instantiate(PrefabPropSettingsButton, parent: window.transform);
-            //newObj = UObj.Instantiate(MainUI.propSettings.GetChildWithComponent<Button>(), parent: MainUI.propSettings.transform);
-        else if (isSlider)
-        {
-            
-            newObj = UObj.Instantiate(PrefabPropSettingsSlider, parent: window.transform);
-            //newObj = UObj.Instantiate(MainUI.propSettings.TransChildren().First(ch => ch.GetComponentInChildren<Slider>()), parent: MainUI.propSettings.transform);
-        }
-        else
-        {
-            RfPlugin.LogError($"Cannot determine what UI element to instantiate as '{typeof(T)}', sorry.");
-            return null;
-        }
-        
-        //TODO
-        //AddedMenuButtons.Add(newBtn);
-        
-        //newBtn.transform.SetParent(MainUI.menuRight.transform, false);
-        
-        siblingIndex = Math.Min(siblingIndex, window.transform.childCount-1);
-        
-        if (siblingIndex >= 0)
-            newObj.transform.SetSiblingIndex(siblingIndex);
-        
-        newObj.SetActive(true);
-        
-        Text textComp = newObj.GetComponentInChildren<Text>();
-        if (textComp != null)
-            textComp.text = text;
-        else
-            RfPlugin.LogError($"Could not find Text component for new prop setting '{text}'");
-        
-        RfPlugin.LogGameObject($"New PS {typeof(T)} = {newObj.GetType()} added", newObj);
-        RfPlugin.LogComponent("newObj.Text", textComp);
-        
-        if (isButton)
-        {
-            Button comp = newObj.GetComponentInChildren<Button>();
-            comp.onClick.RemoveAllListeners();
-            comp.onClick = new();
-        } else if (isSlider)
-        {
-            Slider comp = newObj.GetComponentInChildren<Slider>();
-            comp.onValueChanged.RemoveAllListeners();
-            comp.onValueChanged = new();
-        }
-        
-        RectTransform origRect;
-        if (!PropSettingsOrigRT.TryGetValue(window.GetInstanceID(), out origRect))
-        {
-            origRect = UObj.Instantiate(MainUI.propSettings.transform.GetComponent<RectTransform>());
-            
-            PropSettingsOrigRT.Add(window.GetInstanceID(), origRect);
-        }
-        
-        var rt = newObj.transform.GetComponent<RectTransform>();
-        
-        float elementOffset;
-        
-        if (!PropSettingsOffset.TryGetValue(window.GetInstanceID(), out elementOffset))
-        {
-            var preRT = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
-            elementOffset = preRT.anchoredPosition.y - preRT.rect.height/2f;
-            RfPlugin.LogError($"CreatePropSetting elementOffset inside {window.GetInstanceID()} is at {elementOffset} for the FIRST time");
-        }
-        elementOffset -= rt.rect.height + SettingsElementSpacing;
-        
-        PropSettingsOffset[window.GetInstanceID()] = elementOffset;
-        RfPlugin.LogError($"CreatePropSetting elementOffset inside {window.GetInstanceID()} is at {elementOffset} now, {text} is {rt.rect.height} / {rt.sizeDelta.y}");
-        
-        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, elementOffset + rt.rect.height/2f);
-        
-        var pt = window.transform.GetComponent<RectTransform>();
-        pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y + rt.rect.height + SettingsElementSpacing);
-        
-        
-        return newObj;
-    
-    }
-    
     public static PropWindow CreateNewPropWindow()
     {
         var window = UObj.Instantiate(MainPropWindow, MainUI.Settings.settings.transform);
         return window;
     }
     
-    public static PropSettingsWindow CreateNewSettingsWindow()
-    {
-        var comp = MainUI.propSettings.GetComponent<PropSettingsWindow>();
-        
-        var origChildren = comp.gameObject.TransChildren();
-
-        // calculating how much to shrink the new window because it will have no children
-        // should probably instead just take the abs anchor Y of the last child + height/2 - anchor Y of first Child + height/2
-        float subtractSize = -2 * SettingsElementSpacing * 1.5f;
-        foreach (var c in origChildren)
-        {
-            var rt = c.transform.GetComponent<RectTransform>();
-            // rough might average out for the real spacings on the original...
-            subtractSize += rt.rect.height + SettingsElementSpacing;
-            
-            c.transform.SetParent(null);
-        }
-
-        var window = UObj.Instantiate(comp, MainUI.Settings.settings.transform);
-        
-        foreach (var c in origChildren)
-        {
-            c.transform.SetParent(comp.gameObject.transform);
-        }
-        
-        var pt = window.transform.GetComponent<RectTransform>();
-        pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y - subtractSize);
-        
-        PropSettingsOrigRT.Add(window.GetInstanceID(), pt);
-
-        var preRT = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
-        PropSettingsOffset[window.GetInstanceID()] = -SettingsElementSpacing/2f;
-        
-        RfPlugin.LogError($"CreateNewSettingsWindow elementOffset calculated to be {PropSettingsOffset[window.GetInstanceID()]} for empty window");
-        
-        window.gameObject.SetActive(true);
-        
-        return window;
-    }
-
     public static PropButtonWrapper CreatePropButton(string text, PropWindow window = null)
     {
         if (!initialized)

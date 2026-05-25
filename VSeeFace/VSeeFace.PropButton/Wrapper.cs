@@ -26,7 +26,7 @@ public class PropButtonWrapper
             RfPlugin.LogError($"PropButtonWrapper.ctor: Could not find PropButton Child of {wrap}!");
         }
     }
-
+    
     public void DebugMe()
     {
         Debug(Wrapped, Parent);
