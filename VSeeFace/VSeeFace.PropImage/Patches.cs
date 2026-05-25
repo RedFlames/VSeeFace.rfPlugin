@@ -11,12 +11,12 @@ public partial class VSeeFaceHelper
     [HarmonyPatch(typeof(PropImage))]
     public static class Patch_PropImage
     {
-            [HarmonyPostfix]
-            [HarmonyPatch(nameof(PropImage.StartDragging))]
-            static void StartDragging_Postfix(PropImage __instance)
-            {
-                // RfPlugin.Log($"is this thing on -- {nameof(PropImage)}.{nameof(PropImage.StartDragging)}");
-            }
+        [HarmonyPostfix]
+        [HarmonyPatch(nameof(PropImage.StartDragging))]
+        static void StartDragging_Postfix(PropImage __instance)
+        {
+            // RfPlugin.Log($"is this thing on -- {nameof(PropImage)}.{nameof(PropImage.StartDragging)}");
+        }
     }
 
 }

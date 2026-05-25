@@ -71,7 +71,7 @@ public class StartingText
     public GameObject title;
     public GameObject modelCredits;
     public GameObject credits;
-
+    
     public StartingText()
     {
         startingText = GameObject.Find("VSeeFace/Canvas/UI/StartingText");
@@ -85,7 +85,7 @@ public class StartingText
 
         modelCredits = GameObject.Find("VSeeFace/Canvas/UI/StartingText/Model credits (TMP)");
         RfPlugin.LogGameObject("UI StartingText modelCredits found:", modelCredits);
-
+        
         credits = GameObject.Find("VSeeFace/Canvas/UI/StartingText/Credits (TMP)");
         RfPlugin.LogGameObject("UI StartingText credits found:", credits);
     }
@@ -97,7 +97,7 @@ public class MainUI
     public GameObject title;
     public GameObject menuRight;
     public Settings Settings;
-    public GameObject propsWindow;
+    public PropsWindow propsWindow;
     public GameObject propsWindowScrollView;
     public GameObject propsWindowScrollViewContent;
     public GameObject propSettings;
@@ -120,14 +120,7 @@ public class MainUI
 
         Settings = new();
         
-        propsWindow = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window");
-        RfPlugin.LogGameObject("UI MainUI propsWindow found:", propsWindow);
-        
-        propsWindowScrollView = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/Scroll View");
-        RfPlugin.LogGameObject("UI MainUI propsWindowScrollView found:", propsWindowScrollView);
-        
-        propsWindowScrollViewContent = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/Scroll View/Viewport/Content");
-        RfPlugin.LogGameObject("UI MainUI propsWindowScrollViewContent found:", propsWindowScrollViewContent);
+        propsWindow = new();
 
         propSettings = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Prop Settings");
         RfPlugin.LogGameObject("UI MainUI propSettings found:", propSettings);
@@ -200,5 +193,33 @@ public class Settings
 
         leapMotionBtn = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Menu right/Settings/Hide settings/Leap Motion settings");
         RfPlugin.LogGameObject("UI Settings leapMotionBtn found:", leapMotionBtn);
+    }
+}
+
+// member of MainUI
+public class PropsWindow
+{
+    public GameObject propsWindow;
+    public GameObject scrollView;
+    public GameObject scrollViewContent;
+    public GameObject showPropSettingsButton;
+    public GameObject hidePropSettingsButton;
+    
+    public PropsWindow()
+    {
+        propsWindow = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window");
+        RfPlugin.LogGameObject("UI MainUI propsWindow found:", propsWindow);
+        
+        scrollView = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/Scroll View");
+        RfPlugin.LogGameObject("UI MainUI scrollView found:", scrollView);
+        
+        scrollViewContent = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/Scroll View/Viewport/Content");
+        RfPlugin.LogGameObject("UI MainUI scrollViewContent found:", scrollViewContent);
+        
+        showPropSettingsButton = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/ShowPropSettingsButton");
+        RfPlugin.LogGameObject("UI MainUI showPropsButton found:", showPropSettingsButton);
+        
+        hidePropSettingsButton = GameObject.Find("VSeeFace/Canvas/UI/MainUI/Settings/Props Window/HidePropSettingsButton");
+        RfPlugin.LogGameObject("UI MainUI hidePropsButton found:", hidePropSettingsButton);
     }
 }

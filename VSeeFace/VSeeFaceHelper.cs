@@ -42,7 +42,7 @@ public partial class VSeeFaceHelper
         MainUI = new();
         
         // TODO: Fix me
-        var comp = MainUI.propsWindow.GetComponent<PropWindow>();
+        var comp = MainUI.propsWindow.propsWindow.GetComponent<PropWindow>();
         if (comp)
             MainPropWindow = comp;
         else
@@ -65,7 +65,7 @@ public partial class VSeeFaceHelper
         PropSettingsOrigRT[MainPropSettingsWindow.GetInstanceID()] = origRect;
         
         var rt = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
-        PropSettingsOffset[MainPropSettingsWindow.GetInstanceID()] = rt.anchoredPosition.y;
+        PropSettingsOffset[MainPropSettingsWindow.GetInstanceID()] = rt.anchoredPosition.y - rt.rect.height/2f;
         RfPlugin.LogError($"PrefabPropSettingsButton is at {rt.anchoredPosition.y}");
         
         RfPlugin.Log("VSeeFaceHelper initialized.");
@@ -113,8 +113,12 @@ public partial class VSeeFaceHelper
     
     }
     
+    // PropSettingsOffset is meant to track the anchor Y necessary to hit the bottom edge of last child in a prop settings window
+    // NOT the center point of that last element because idk I don't wanna have to look up what half its size is when adding next?
     public static Dictionary<int, float> PropSettingsOffset = [];
     public static Dictionary<int, RectTransform> PropSettingsOrigRT = [];
+
+    public static float SettingsElementSpacing = 8f;
     
     public static GameObject CreatePropSetting<T>(string text, PropSettingsWindow window = null, int siblingIndex = -1)
     where T : UObj
@@ -194,17 +198,18 @@ public partial class VSeeFaceHelper
         if (!PropSettingsOffset.TryGetValue(window.GetInstanceID(), out elementOffset))
         {
             var preRT = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
-            elementOffset = preRT.anchoredPosition.y;
+            elementOffset = preRT.anchoredPosition.y - preRT.rect.height/2f;
+            RfPlugin.LogError($"CreatePropSetting elementOffset inside {window.GetInstanceID()} is at {elementOffset} for the FIRST time");
         }
-        elementOffset -= rt.rect.height;
+        elementOffset -= rt.rect.height + SettingsElementSpacing;
         
         PropSettingsOffset[window.GetInstanceID()] = elementOffset;
-        RfPlugin.LogError($"PrefabPropSettingsButton is at {elementOffset}");
+        RfPlugin.LogError($"CreatePropSetting elementOffset inside {window.GetInstanceID()} is at {elementOffset} now, {text} is {rt.rect.height} / {rt.sizeDelta.y}");
         
-        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, elementOffset);
+        rt.anchoredPosition = new Vector2(rt.anchoredPosition.x, elementOffset + rt.rect.height/2f);
         
         var pt = window.transform.GetComponent<RectTransform>();
-        pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y + rt.rect.height);
+        pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y + rt.rect.height + SettingsElementSpacing);
         
         
         return newObj;
@@ -222,11 +227,16 @@ public partial class VSeeFaceHelper
         var comp = MainUI.propSettings.GetComponent<PropSettingsWindow>();
         
         var origChildren = comp.gameObject.TransChildren();
-        float subtractSize = 0f;
+
+        // calculating how much to shrink the new window because it will have no children
+        // should probably instead just take the abs anchor Y of the last child + height/2 - anchor Y of first Child + height/2
+        float subtractSize = -2 * SettingsElementSpacing * 1.5f;
         foreach (var c in origChildren)
         {
             var rt = c.transform.GetComponent<RectTransform>();
-            subtractSize += rt.rect.height;
+            // rough might average out for the real spacings on the original...
+            subtractSize += rt.rect.height + SettingsElementSpacing;
+            
             c.transform.SetParent(null);
         }
 
@@ -236,14 +246,16 @@ public partial class VSeeFaceHelper
         {
             c.transform.SetParent(comp.gameObject.transform);
         }
-
+        
         var pt = window.transform.GetComponent<RectTransform>();
         pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y - subtractSize);
         
         PropSettingsOrigRT.Add(window.GetInstanceID(), pt);
 
         var preRT = PrefabPropSettingsButton.transform.GetComponent<RectTransform>();
-        PropSettingsOffset[window.GetInstanceID()] = preRT.anchoredPosition.y + subtractSize;
+        PropSettingsOffset[window.GetInstanceID()] = -SettingsElementSpacing/2f;
+        
+        RfPlugin.LogError($"CreateNewSettingsWindow elementOffset calculated to be {PropSettingsOffset[window.GetInstanceID()]} for empty window");
         
         window.gameObject.SetActive(true);
         

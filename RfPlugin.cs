@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 using BepInEx;
 using BepInEx.Logging;
 
 using HarmonyLib;
+
+using Leap.Unity.Infix;
 
 using rfPlugin.VSeeFace;
 
@@ -36,6 +37,7 @@ public partial class RfPlugin : BaseUnityPlugin
 
     // needed for applying the patches
     public Harmony Harmony { get; } = new(MyPluginInfo.PLUGIN_NAME);
+
     // The plugin probably acts like a singleton, right?
     public static RfPlugin Instance { get; private set; }
     
@@ -47,6 +49,18 @@ public partial class RfPlugin : BaseUnityPlugin
 
     public static PropWindow ExtraPropWindow { get; private set; }
     public static PropSettingsWindow ExtraSettingsWindow { get; private set; }
+    
+    public static bool AdvancedPropSettingsVisible { 
+        get { return _advancedPropSettingsVisible; }
+        set
+        {
+            // auto-implemented properties ftw... nvm I'm not on a Lang version where I can use "field"...
+            ToggleAdvancedPropSettings(value);
+        }
+    }
+    private static bool _advancedPropSettingsVisible = false;
+
+    public static List<GameObject> AdvancedPropSettings = [];
     
     private static List<GameObject> _Spheres = [];
     
@@ -84,22 +98,16 @@ public partial class RfPlugin : BaseUnityPlugin
         var btn = VSeeFaceHelper.CreateMenuButton("test", 3).OnClick(btn_callback);
         var btn2 = VSeeFaceHelper.CreateMenuButton("test2").OnClick(btn_callback2);
         
-        var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("test3").OnClick(btn_callback);
-        var btn4 = VSeeFaceHelper.CreatePropSetting<Slider>("test4").OnSlide(slider_callback);
-        var slider = btn4.GetComponentInChildren<Slider>();
+        var btn3 = VSeeFaceHelper.CreatePropSetting<Button>("Advanced Settings").OnClick(advanced_settings_callback);
+        var testslider = VSeeFaceHelper.CreatePropSetting<Slider>("test4").OnSlide(slider_callback);
+        AddAdvancedPropSetting(testslider);
         
-        LogComponent("Slider", slider);
-        LogGameObject("Slider inst", btn4);
-        LogGameObject("Slider parent", slider.transform.parent.gameObject);
+        //var slider = btn4.GetComponentInChildren<Slider>();
+        var adv_btn = VSeeFaceHelper.CreatePropSetting<Button>("Some button").OnClick(btn_callback3);
+        AddAdvancedPropSetting(adv_btn);
         
-        //slider.onValueChanged.AddListener(slider_callback);
-
-        btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
-        slider = btn4.GetComponentInChildren<Slider>();
-        LogComponent("Slider", slider);
-        LogGameObject("Slider inst", btn4);
-        LogGameObject("Slider parent", slider.transform.parent.gameObject);
-        slider.onValueChanged.AddListener(slider_callback);
+        //btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
+        //slider = btn4.GetComponentInChildren<Slider>();
 
         var btn5 = VSeeFaceHelper.CreatePropSetting<Button>("test3", ExtraSettingsWindow).OnClick(btn_callback3);
         var btn6 = VSeeFaceHelper.CreatePropSetting<Slider>("test4", ExtraSettingsWindow).OnSlide(slider_callback2);    
@@ -158,6 +166,7 @@ public partial class RfPlugin : BaseUnityPlugin
         {
             // log warn once?
         }
+    
     }
     
     /*
@@ -200,7 +209,162 @@ public partial class RfPlugin : BaseUnityPlugin
                 GizmosLibraryPlugin.GizmosAPI.DrawVector(Vector3.up, .02f, Vector3.zero, Color.cyan);
             });
         }
+    
+        var drags = Resources.FindObjectsOfTypeAll<Draggable>();
+        foreach (var drag in drags)
+        {
+            if (drag.isMouseDown)
+            {
+                RectTransform prt = drag.transform.GetComponent<RectTransform>();
+                
+                Vector2 size = DrawRect2D(prt, Color.red);
+                
+                int i = 1;
+                foreach (var c in drag.gameObject.TransChildren())
+                {
+                    RectTransform rt = c.transform.GetComponent<RectTransform>();
+                
+                    DrawRect2D(rt, Color.red * 1f/i, size);
+                    i++;
+                }
+                /*
+                GizmosLibraryPlugin.GizmosAPI.DrawOnGlobalReference(() =>
+                {
+                    GizmosLibraryPlugin.GizmosAPI.DrawWireframeCube(
+                        Camera.main.transform.forward, 
+                        Camera.main.transform.up, 
+                        Camera.main.transform.right,
+                        new Vector3(5f,5f,5f),
+                        Color.red
+                        );
+                });
+                
+                Transform trans = new ();
+                
+                Vector3 v3 = Camera.main.ScreenToWorldPoint(drag.transform.position);*/
+                /*
+                trans.position = v3;
+                
+                GizmosLibraryPlugin.GizmosAPI.DrawWithReference(trans,() =>
+                {
+                    GizmosLibraryPlugin.GizmosAPI.DrawWireframeCube(
+                        Camera.main.transform.forward, 
+                        Camera.main.transform.up, 
+                        Camera.main.transform.right,
+                        new Vector3(5f,5f,5f),
+                        Color.red
+                        );
+                    GizmosLibraryPlugin.GizmosAPI.DrawVector(drag.transform.up, .0f, Vector3.zero, Color.cyan);
+                    GizmosLibraryPlugin.GizmosAPI.DrawVector(Vector3.up, .0f, Vector3.zero, Color.blue);
+                });*/
+                //LogError($"Drag: {drag.transform.position}");
+                //LogError($"Drag stw: {v3}");
+            }
+        }
+        
+        if (Input.GetMouseButtonDown(0))
+        {
+            clickWhich = !clickWhich;
+            
+            if (clickWhich)
+            {
+                clickA = Input.mousePosition;
+                LogError($"clickA: {Input.mousePosition} => {clickA}");
+            } else
+            {
+                clickB = Input.mousePosition;
+                LogError($"clickB: {Input.mousePosition} => {clickB}");
+            }
+        
+        }
+    
+        DrawLine2D(clickA, clickB, Color.gray);
+    
     }
+
+    public Vector2 DrawRect2D (RectTransform rt, Color c, Vector3 offset = new())
+    {
+        Vector3[] corners = [new(), new(), new(), new()];
+        rt.GetLocalCorners(corners);
+        
+        for (int i = 0; i < 4; i++)
+        {
+            corners[i] = corners[i] * 1.666f;
+        }
+        
+        Vector3 pos;
+        if (offset.magnitude < .0001f)
+        {
+            
+            pos = rt.position + (corners[1] - corners[0]).Abs();
+        } else
+        {
+            pos = rt.position + new Vector3(offset.x, 0f, 0f);
+        }
+        
+        DrawLine2D(corners[0], corners[1], c, pos);
+        DrawLine2D(corners[2], corners[1], c, pos);
+        DrawLine2D(corners[2], corners[3], c, pos);
+        DrawLine2D(corners[0], corners[3], c, pos);
+        
+        if (offset.magnitude < .0001f)
+        {
+            
+            pos = rt.position + (corners[1] - corners[2]).Abs();
+        } else
+        {
+            
+            pos = rt.position + new Vector3(0f, offset.y, 0f);
+        }
+        DrawLine2D(corners[0], corners[1], c, pos);
+        DrawLine2D(corners[2], corners[1], c, pos);
+        DrawLine2D(corners[2], corners[3], c, pos);
+        DrawLine2D(corners[0], corners[3], c, pos);
+        
+        return new Vector2((corners[1] - corners[2]).Abs().x, (corners[1] - corners[0]).Abs().y);
+    }
+
+    public void DrawLine2D (Vector3 a, Vector3 b, Color col, Vector3 offset = new())
+    {
+            
+            /*
+            
+            trans.SetPositionAndRotation(uhh.origin + uhh.direction * 5f, Quaternion.identity);
+            */
+            var uhh = Camera.main.ScreenPointToRay(a + offset);
+            
+            Vector3 wPos = uhh.origin + uhh.direction * .01f;
+            
+            var uhh2 = Camera.main.ScreenPointToRay(b + offset);
+            
+            Vector3 wPos2 = uhh2.origin + uhh2.direction * .01f;
+            
+            Vector3 wuh = (wPos2 - wPos);
+        
+            float l = wuh.magnitude;
+
+            //var uhh2 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            /*GizmosLibraryPlugin.GizmosAPI.DrawWithReference(trans,() =>
+            {
+                GizmosLibraryPlugin.GizmosAPI.DrawWireframeCube(
+                    Camera.main.transform.forward, 
+                    Camera.main.transform.up, 
+                    Camera.main.transform.right,
+                    Vector3.zero,
+                    Color.red
+                    );
+            });*/
+            
+            GizmosLibraryPlugin.GizmosAPI.DrawOnGlobalReference(() =>
+            {
+                GizmosLibraryPlugin.GizmosAPI.DrawVector(wuh, .0f, wPos, col);
+            });
+            //LogError($"Mouse: {Input.mousePosition} => {posVec}");
+    }
+    
+    public static bool clickWhich = false;
+    public static Vector3 clickA;
+    public static Vector3 clickB;
     
     // just a lil guy for the new menu button
     public void btn_callback()
@@ -214,13 +378,74 @@ public partial class RfPlugin : BaseUnityPlugin
         
         Log($"Tracked prop buttons: {VSeeFaceHelper.PropButtons.Count}");
     }
+
+    public void advanced_settings_callback()
+    {
+        Log($"advanced settings toggled: {!AdvancedPropSettingsVisible}");
+        ToggleAdvancedPropSettings();
+    }
+
+    // TODO: this type of show/hide bottom half settings of prop settings window should be
+    // part of a prop settings window wrapper so that it can apply to each one individually
+    // and not like currently just for the main one...
+    
+    public static void AddAdvancedPropSetting(GameObject go)
+    {
+        var prevVisibility = AdvancedPropSettingsVisible;
+
+        AdvancedPropSettingsVisible = true;
+
+        AdvancedPropSettings.Add(go);
+        go.SetActive(prevVisibility);
+    
+        AdvancedPropSettingsVisible = prevVisibility;
+    }
+
+    public static void ToggleAdvancedPropSettings(bool? newValue = null)
+    {
+        if (newValue is not bool newVal)
+            newVal = !_advancedPropSettingsVisible;
+        
+        if (_advancedPropSettingsVisible == newVal)
+            return;
+
+        _advancedPropSettingsVisible = newVal;
+        
+        var heightChange = 0f;
+
+        foreach (var go in AdvancedPropSettings)
+        {
+            Log($"setting element to {newVal}: {go.name}");
+            go.SetActive(newVal);
+            
+            var rt = go.transform.GetComponent<RectTransform>();
+            
+            heightChange += rt.rect.height + VSeeFaceHelper.SettingsElementSpacing;
+        }
+        //if (AdvancedPropSettings.Count > 0)
+        //    heightChange -= VSeeFaceHelper.SettingsElementSpacing;
+        
+        var pt = VSeeFaceHelper.MainPropSettingsWindow.transform.GetComponent<RectTransform>();
+
+        if (newVal)
+        {
+            pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y + heightChange);
+            pt.position = new Vector2(pt.position.x, pt.position.y - heightChange + VSeeFaceHelper.SettingsElementSpacing * 1.5f);
+        } else
+        {
+            pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y - heightChange);
+            pt.position = new Vector2(pt.position.x, pt.position.y + heightChange - VSeeFaceHelper.SettingsElementSpacing * 1.5f);
+        }
+    
+
+    }
     
     public void btn_callback2()
     {
         //var btn = VSeeFaceHelper.CreatePropButton("Zesting", ExtraPropWindow);
         LogWarn($"btn_callback2");
     }
-
+    
     public void btn_callback3()
     {
         LogWarn($"btn_callback3");
