@@ -5,8 +5,6 @@ using BepInEx.Logging;
 
 using HarmonyLib;
 
-using Leap.Unity.Infix;
-
 using rfPlugin.VSeeFace;
 
 using UnityEngine;
@@ -166,7 +164,6 @@ public partial class RfPlugin : BaseUnityPlugin
         {
             // log warn once?
         }
-    
     }
     
     /*
@@ -188,13 +185,6 @@ public partial class RfPlugin : BaseUnityPlugin
         // Sets the default material for gizmos
         GizmosLibraryPlugin.GizmosAPI.SetDefaultMaterialPass();
         
-        // This draws a hourglass on the world origin
-        /*GizmosLibraryPlugin.GizmosAPI.DrawOnGlobalReference(() =>
-        {
-            GizmosLibraryPlugin.GizmosAPI.DrawWireframeCone(0f, 1f, Vector3.zero, Vector3.up, Color.yellow, 12);
-            GizmosLibraryPlugin.GizmosAPI.DrawWireframeCone(0f, 1f, Vector3.zero, -Vector3.up, Color.yellow, 12);
-        });*/
-
         // draw some gizmos after/while a VSF prop is being attached
         if (attachedBone != null)
         {
@@ -217,154 +207,23 @@ public partial class RfPlugin : BaseUnityPlugin
             {
                 RectTransform prt = drag.transform.GetComponent<RectTransform>();
                 
-                Vector2 size = DrawRect2D(prt, Color.red);
+                Vector2 size = new(prt.rect.width, prt.rect.height);
+                UnityHelper.DrawRect2D(prt, Color.red, new(size.x, 0f, 0f));
+                UnityHelper.DrawRect2D(prt, Color.red, new(0f, size.y, 0f));
                 
                 int i = 1;
                 foreach (var c in drag.gameObject.TransChildren())
                 {
                     RectTransform rt = c.transform.GetComponent<RectTransform>();
                 
-                    DrawRect2D(rt, Color.red * 1f/i, size);
+                    UnityHelper.DrawRect2D(rt, Color.red * 1f/i, new(size.x, 0f, 0f));
+                    UnityHelper.DrawRect2D(rt, Color.red * 1f/i, new(0f, size.y, 0f));
                     i++;
                 }
-                /*
-                GizmosLibraryPlugin.GizmosAPI.DrawOnGlobalReference(() =>
-                {
-                    GizmosLibraryPlugin.GizmosAPI.DrawWireframeCube(
-                        Camera.main.transform.forward, 
-                        Camera.main.transform.up, 
-                        Camera.main.transform.right,
-                        new Vector3(5f,5f,5f),
-                        Color.red
-                        );
-                });
-                
-                Transform trans = new ();
-                
-                Vector3 v3 = Camera.main.ScreenToWorldPoint(drag.transform.position);*/
-                /*
-                trans.position = v3;
-                
-                GizmosLibraryPlugin.GizmosAPI.DrawWithReference(trans,() =>
-                {
-                    GizmosLibraryPlugin.GizmosAPI.DrawWireframeCube(
-                        Camera.main.transform.forward, 
-                        Camera.main.transform.up, 
-                        Camera.main.transform.right,
-                        new Vector3(5f,5f,5f),
-                        Color.red
-                        );
-                    GizmosLibraryPlugin.GizmosAPI.DrawVector(drag.transform.up, .0f, Vector3.zero, Color.cyan);
-                    GizmosLibraryPlugin.GizmosAPI.DrawVector(Vector3.up, .0f, Vector3.zero, Color.blue);
-                });*/
-                //LogError($"Drag: {drag.transform.position}");
-                //LogError($"Drag stw: {v3}");
             }
         }
         
-        if (Input.GetMouseButtonDown(0))
-        {
-            clickWhich = !clickWhich;
-            
-            if (clickWhich)
-            {
-                clickA = Input.mousePosition;
-                LogError($"clickA: {Input.mousePosition} => {clickA}");
-            } else
-            {
-                clickB = Input.mousePosition;
-                LogError($"clickB: {Input.mousePosition} => {clickB}");
-            }
-        
-        }
-    
-        DrawLine2D(clickA, clickB, Color.gray);
-    
     }
-
-    public Vector2 DrawRect2D (RectTransform rt, Color c, Vector3 offset = new())
-    {
-        Vector3[] corners = [new(), new(), new(), new()];
-        rt.GetLocalCorners(corners);
-        
-        for (int i = 0; i < 4; i++)
-        {
-            corners[i] = corners[i] * 1.666f;
-        }
-        
-        Vector3 pos;
-        if (offset.magnitude < .0001f)
-        {
-            
-            pos = rt.position + (corners[1] - corners[0]).Abs();
-        } else
-        {
-            pos = rt.position + new Vector3(offset.x, 0f, 0f);
-        }
-        
-        DrawLine2D(corners[0], corners[1], c, pos);
-        DrawLine2D(corners[2], corners[1], c, pos);
-        DrawLine2D(corners[2], corners[3], c, pos);
-        DrawLine2D(corners[0], corners[3], c, pos);
-        
-        if (offset.magnitude < .0001f)
-        {
-            
-            pos = rt.position + (corners[1] - corners[2]).Abs();
-        } else
-        {
-            
-            pos = rt.position + new Vector3(0f, offset.y, 0f);
-        }
-        DrawLine2D(corners[0], corners[1], c, pos);
-        DrawLine2D(corners[2], corners[1], c, pos);
-        DrawLine2D(corners[2], corners[3], c, pos);
-        DrawLine2D(corners[0], corners[3], c, pos);
-        
-        return new Vector2((corners[1] - corners[2]).Abs().x, (corners[1] - corners[0]).Abs().y);
-    }
-
-    public void DrawLine2D (Vector3 a, Vector3 b, Color col, Vector3 offset = new())
-    {
-            
-            /*
-            
-            trans.SetPositionAndRotation(uhh.origin + uhh.direction * 5f, Quaternion.identity);
-            */
-            var uhh = Camera.main.ScreenPointToRay(a + offset);
-            
-            Vector3 wPos = uhh.origin + uhh.direction * .01f;
-            
-            var uhh2 = Camera.main.ScreenPointToRay(b + offset);
-            
-            Vector3 wPos2 = uhh2.origin + uhh2.direction * .01f;
-            
-            Vector3 wuh = (wPos2 - wPos);
-        
-            float l = wuh.magnitude;
-
-            //var uhh2 = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            /*GizmosLibraryPlugin.GizmosAPI.DrawWithReference(trans,() =>
-            {
-                GizmosLibraryPlugin.GizmosAPI.DrawWireframeCube(
-                    Camera.main.transform.forward, 
-                    Camera.main.transform.up, 
-                    Camera.main.transform.right,
-                    Vector3.zero,
-                    Color.red
-                    );
-            });*/
-            
-            GizmosLibraryPlugin.GizmosAPI.DrawOnGlobalReference(() =>
-            {
-                GizmosLibraryPlugin.GizmosAPI.DrawVector(wuh, .0f, wPos, col);
-            });
-            //LogError($"Mouse: {Input.mousePosition} => {posVec}");
-    }
-    
-    public static bool clickWhich = false;
-    public static Vector3 clickA;
-    public static Vector3 clickB;
     
     // just a lil guy for the new menu button
     public void btn_callback()
@@ -422,8 +281,6 @@ public partial class RfPlugin : BaseUnityPlugin
             
             heightChange += rt.rect.height + VSeeFaceHelper.SettingsElementSpacing;
         }
-        //if (AdvancedPropSettings.Count > 0)
-        //    heightChange -= VSeeFaceHelper.SettingsElementSpacing;
         
         var pt = VSeeFaceHelper.MainPropSettingsWindow.transform.GetComponent<RectTransform>();
 
@@ -431,8 +288,7 @@ public partial class RfPlugin : BaseUnityPlugin
         {
             pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y + heightChange);
             pt.position = new Vector2(pt.position.x, pt.position.y - heightChange + VSeeFaceHelper.SettingsElementSpacing * 1.5f);
-        } else
-        {
+        } else {
             pt.sizeDelta = new Vector2(pt.sizeDelta.x, pt.sizeDelta.y - heightChange);
             pt.position = new Vector2(pt.position.x, pt.position.y + heightChange - VSeeFaceHelper.SettingsElementSpacing * 1.5f);
         }
