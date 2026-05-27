@@ -21,10 +21,10 @@ public partial class RfPlugin
         [HarmonyPatch("LateUpdate")]
         static void LateUpdate_Postfix(Prop __instance)
         {
-            /*if (targetProp != null && __instance == targetProp)
+            if (targetProp != null && __instance == targetProp)
             {
                 targetProp.gameObject.SetActive(true);
-            }*/
+            }
         }
 
         [HarmonyPrefix]

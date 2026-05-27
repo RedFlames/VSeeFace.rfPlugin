@@ -8,6 +8,10 @@ namespace rfPlugin.VSeeFace;
 */
 public partial class VSeeFaceHelper
 {
+    // Using this to add things to RefreshSettings because it's different from PropManager.onSelectedPropChange ...
+    public delegate void OnRefreshSettings();
+    public static event OnRefreshSettings onRefreshSettings;
+
     [HarmonyPatch(typeof(PropSettingsWindow))]
     public static class Patch_PropSettingsWindow
     {
@@ -24,6 +28,16 @@ public partial class VSeeFaceHelper
         {
             // RfPlugin.Log($"is this thing on -- {nameof(PropSettingsWindow)}.{nameof(PropSettingsWindow.Update)}");
         }
+        
+        
+        [HarmonyPostfix]
+        [HarmonyPatch(nameof(PropSettingsWindow.RefreshSettings))]
+        static void RefreshSettings_Postfix(PropSettingsWindow __instance)
+        {
+            // RfPlugin.Log($"is this thing on -- {nameof(PropSettingsWindow)}.{nameof(PropSettingsWindow.Update)}");
+            onRefreshSettings();
+        }
+        
     }
 
 }

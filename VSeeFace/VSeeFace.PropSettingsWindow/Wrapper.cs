@@ -25,7 +25,6 @@ public class PropSettingsWindowWrapper
     // NOT the center point of that last element because idk I don't wanna have to look up what half its size is when adding next?
     public static Dictionary<int, float> PropSettingsOffset = [];
     public static Dictionary<int, RectTransform> PropSettingsOrigRT = [];
-    
 
     public static void InitStatic()
     {

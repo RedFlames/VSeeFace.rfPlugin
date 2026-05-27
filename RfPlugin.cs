@@ -57,11 +57,13 @@ public partial class RfPlugin : BaseUnityPlugin
         }
     }
     private static bool _advancedPropSettingsVisible = false;
-
+    
     public static List<GameObject> AdvancedPropSettings = [];
     
     private static List<GameObject> _Spheres = [];
     
+    private GameObject transparencySlider;
+
     // init plugin when Unity instance of it "wakes up"
     private void Awake()
     {
@@ -97,16 +99,22 @@ public partial class RfPlugin : BaseUnityPlugin
         var btn2 = VSeeFaceHelper.CreateMenuButton("test2").OnClick(btn_callback2);
         
         var btn3 = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Button>("Advanced Settings").OnClick(advanced_settings_callback);
-        var testslider = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(slider_callback);
-        AddAdvancedPropSetting(testslider);
+        transparencySlider = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(transparency_slider_callback);
+        AddAdvancedPropSetting(transparencySlider);
+        transparencySlider.GetComponentInChildren<Slider>().maxValue = 100f;
+
+        VSeeFaceHelper.onRefreshSettings += RefreshSettings;
         
+        // needed to move this to Update() because the Singleton isn't set until PropManager.Start?
+        // PropManager.Singleton.onSelectedPropChange += RefreshSettings;
+
         //var slider = btn4.GetComponentInChildren<Slider>();
         var adv_btn = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Button>("Some button").OnClick(btn_callback3);
         AddAdvancedPropSetting(adv_btn);
         
         //btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
         //slider = btn4.GetComponentInChildren<Slider>();
-
+        
         var btn5 = ExtraSettingsWindow.CreatePropSetting<Button>("test3").OnClick(btn_callback3);
         var btn6 = ExtraSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(slider_callback2);    
     }
@@ -164,6 +172,7 @@ public partial class RfPlugin : BaseUnityPlugin
         {
             // log warn once?
         }
+        
     }
     
     /*
@@ -259,7 +268,7 @@ public partial class RfPlugin : BaseUnityPlugin
     
         AdvancedPropSettingsVisible = prevVisibility;
     }
-
+    
     public static void ToggleAdvancedPropSettings(bool? newValue = null)
     {
         if (newValue is not bool newVal)
@@ -298,7 +307,6 @@ public partial class RfPlugin : BaseUnityPlugin
     
     public void btn_callback2()
     {
-        //var btn = VSeeFaceHelper.CreatePropButton("Zesting", ExtraPropWindow);
         LogWarn($"btn_callback2");
     }
     
@@ -307,13 +315,18 @@ public partial class RfPlugin : BaseUnityPlugin
         LogWarn($"btn_callback3");
     }
     
-    
-    public void slider_callback(float f)
+    public void transparency_slider_callback(float f)
     {
-        
+        //LogError($"transparency_slider_callback runs NOW -- settingTheDamnValueNow is {settingTheDamnValueNow}, {f}");
         LogWarn($"slider: {f}");
+        VSeeFaceHelper.SettingsTransparency = f;
     }
-
+    
+    public void RefreshSettings()
+    {
+        //LogError($"RefreshSettings runs NOW -- setting slider to {VSeeFaceHelper.baseSettingsExt.transparency}");
+        transparencySlider.GetComponentInChildren<Slider>().value = VSeeFaceHelper.baseSettingsExt.transparency;
+    }
     
     public void slider_callback2(float f)
     {
