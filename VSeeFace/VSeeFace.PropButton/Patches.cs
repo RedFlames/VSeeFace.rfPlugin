@@ -56,6 +56,21 @@ public partial class VSeeFaceHelper
             PropButtons.Remove(item);
         }
         
+        // I wanted to put this into a PropWindow patch, but there's no Update() implementation there so idk how
+        [HarmonyPostfix]
+        [HarmonyPatch("Update")]
+        static void Update_Postfix(Prop __instance)
+        {
+            var title = MainPropWindow.transform.Find("Title");
+            if (title && title.GetComponent<Text>() is Text textUI)
+            {
+                textUI.text = $"Props ({PropButtons.Count})";
+            } else
+            {
+                // log warn once?
+            }
+        }
+        
         /*
         This doesn't work but idk why :3
 

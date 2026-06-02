@@ -60,6 +60,45 @@ public static class GameObjectExtensions
         }
         return go;
     }
+    
+    
+    public static GameObject OnToggle(this GameObject go, UnityEngine.Events.UnityAction<bool> callback, bool removeAll = true)
+    {
+        if (go.GetComponentInChildren<Toggle>() is Toggle comp)
+        {
+            if (removeAll)
+            {
+                comp.onValueChanged.RemoveAllListeners();
+                comp.onValueChanged = new();
+            }
+            comp.onValueChanged.AddListener(callback);
+        } else
+        {
+            RfPlugin.LogWarn("Setting OnToggle on non-toggle not implemented");
+        }
+        return go;
+    }
+    
+    
+    public static GameObject OnDropdownChange(this GameObject go, UnityEngine.Events.UnityAction<int> callback, bool removeAll = true)
+    {
+        if (go.GetComponentInChildren<Dropdown>() is Dropdown comp)
+        {
+            if (removeAll)
+            {
+                comp.onValueChanged.RemoveAllListeners();
+                comp.onValueChanged = new();
+            }
+            comp.onValueChanged.AddListener(callback);
+        } else
+        {
+            RfPlugin.LogWarn("Setting OnDropdownChange on non-dropdown not implemented");
+        }
+        return go;
+    }
+    
+
+
     // get all children of the object's transform
     public static List<GameObject> TransChildren(this GameObject go)
     {

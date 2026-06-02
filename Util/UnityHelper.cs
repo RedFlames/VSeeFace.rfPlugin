@@ -37,8 +37,9 @@ public static class UnityHelper
         //nMat.SetTexture("_MainTex", Resources.Load<Texture2D>("gui/profiler_bck"));
     }
     
-    public static void DrawRect2D (RectTransform rt, Color c, Vector3 offset = new())
+    public static void DrawRect2D (RectTransform rt, Color c, Vector3 offset = new(), Camera cam = null)
     {
+        cam ??= Camera.main;
         Vector3[] corners = [new(), new(), new(), new()];
         rt.GetLocalCorners(corners);
         
@@ -49,25 +50,28 @@ public static class UnityHelper
         
         Vector3 pos = rt.position + offset * 1.666f;
         
-        DrawLine2D(corners[0], corners[1], c, pos);
-        DrawLine2D(corners[2], corners[1], c, pos);
-        DrawLine2D(corners[2], corners[3], c, pos);
-        DrawLine2D(corners[0], corners[3], c, pos);
+        DrawLine2D(corners[0], corners[1], c, pos, cam);
+        DrawLine2D(corners[2], corners[1], c, pos, cam);
+        DrawLine2D(corners[2], corners[3], c, pos, cam);
+        DrawLine2D(corners[0], corners[3], c, pos, cam);
     }
 
-    public static void DrawLine2D (Vector3 a, Vector3 b, Color col, Vector3 offset = new())
+    public static void DrawLine2D (Vector3 a, Vector3 b, Color col, Vector3 offset = new(), Camera cam = null)
     {
-        var rayA = Camera.main.ScreenPointToRay(a + offset);
+        cam ??= Camera.main;
+
+        var rayA = cam.ScreenPointToRay(a + offset);
         
         Vector3 worldA = rayA.origin + rayA.direction * .01f;
         
-        var rayB = Camera.main.ScreenPointToRay(b + offset);
+        var rayB = cam.ScreenPointToRay(b + offset);
         
         Vector3 worldB = rayB.origin + rayB.direction * .01f;
         
         Vector3 worldAtoB = worldB - worldA;
         
         GizmosLibraryPlugin.GizmosAPI.DrawOnGlobalReference(() =>
+        //GizmosLibraryPlugin.GizmosAPI.DrawWithReference(cam.transform, () =>
         {
             GizmosLibraryPlugin.GizmosAPI.DrawVector(worldAtoB, .0f, worldA, col);
         });

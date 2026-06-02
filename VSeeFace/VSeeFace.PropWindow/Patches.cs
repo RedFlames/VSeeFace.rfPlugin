@@ -21,7 +21,7 @@ public partial class VSeeFaceHelper
             // RfPlugin.Log($"is this thing on -- {nameof(PropImage)}.{nameof(PropImage.StartDragging)}");
             return __instance == MainPropWindow;
         }
-
+        
         [HarmonyPrefix]
         [HarmonyPatch(nameof(PropWindow.SaveList))]
         static bool SaveList_Prefix(PropWindow __instance)

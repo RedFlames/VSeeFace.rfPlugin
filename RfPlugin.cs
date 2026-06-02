@@ -46,7 +46,7 @@ public partial class RfPlugin : BaseUnityPlugin
     private static Prop targetProp;
 
     public static PropWindow ExtraPropWindow { get; private set; }
-    public static PropSettingsWindowWrapper ExtraSettingsWindow { get; private set; }
+    public static PropSettingsWindowWrapper ExtensionSettings { get; private set; }
     
     public static bool AdvancedPropSettingsVisible { 
         get { return _advancedPropSettingsVisible; }
@@ -81,7 +81,7 @@ public partial class RfPlugin : BaseUnityPlugin
 
         ExtraPropWindow = VSeeFaceHelper.CreateNewPropWindow();
 
-        ExtraSettingsWindow = PropSettingsWindowWrapper.CreateNewSettingsWindow();
+        ExtensionSettings = PropSettingsWindowWrapper.CreateNewSettingsWindow();
         
         // just some debugging log dumps to find VSeeFace stuff
         //VSeeFaceHelper.DumpObjectsByName();
@@ -95,11 +95,11 @@ public partial class RfPlugin : BaseUnityPlugin
             _Spheres.Add(UnityHelper.CreateTransparentSphere(alpha: .05f + .1f * i));
     
         // --- Add new right-menu button(s) ---
-        var btn = VSeeFaceHelper.CreateMenuButton("test", 3).OnClick(btn_callback);
+        var btn = VSeeFaceHelper.CreateMenuButton("Extension Settings", 2).OnClick(extension_settings_callback);
         var btn2 = VSeeFaceHelper.CreateMenuButton("test2").OnClick(btn_callback2);
         
         var btn3 = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Button>("Advanced Settings").OnClick(advanced_settings_callback);
-        transparencySlider = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(transparency_slider_callback);
+        transparencySlider = VSeeFaceHelper.MainPropSettingsWindow.CreatePropSetting<Slider>("Opacity").OnSlide(transparency_slider_callback);
         AddAdvancedPropSetting(transparencySlider);
         transparencySlider.GetComponentInChildren<Slider>().maxValue = 100f;
 
@@ -115,9 +115,39 @@ public partial class RfPlugin : BaseUnityPlugin
         //btn4 = VSeeFaceHelper.MainUI.propSettings.TransChildren().First(ch => ch.GetChildWithComponent<Slider>());
         //slider = btn4.GetComponentInChildren<Slider>();
         
-        var btn5 = ExtraSettingsWindow.CreatePropSetting<Button>("test3").OnClick(btn_callback3);
-        var btn6 = ExtraSettingsWindow.CreatePropSetting<Slider>("test4").OnSlide(slider_callback2);    
+        ExtensionSettings.CreatePropSetting<Button>("gizmo cam").OnClick(delegate
+        {
+            if (!DebugGizmoCamera) return;
+            DebugGizmoCamera.enabled = !DebugGizmoCamera.enabled;
+        });
+        ExtensionSettings.CreatePropSetting<Button>("gizmo top cam").OnClick(delegate
+        {
+            if (!OverlayGizmoCamera) return;
+            OverlayGizmoCamera.enabled = !OverlayGizmoCamera.enabled;
+        });
+        ExtensionSettings.CreatePropSetting<Button>("on top cam").OnClick(delegate
+        {
+            if (!AlwaysTopPropsCam) return;
+            AlwaysTopPropsCam.enabled = !AlwaysTopPropsCam.enabled;
+            // TODO does spoutExport need update?
+        });
+        ExtensionSettings.CreatePropSetting<Button>("Camera.main").OnClick(delegate
+        {
+            if (!Camera.main) return;
+            Camera.main.enabled = !Camera.main.enabled;
+        });
+        
+
+
+        var btn6 = ExtensionSettings.CreatePropSetting<Slider>("test4").OnSlide(slider_callback2);
+        var btn7 = ExtensionSettings.CreatePropSetting<Toggle>("test5").OnToggle(toggle_callback);
+        var btn8 = ExtensionSettings.CreatePropSetting<Dropdown>("test6").OnDropdownChange(dropdown_callback);
+    
     }
+    
+    public static Camera DebugGizmoCamera { get; private set; }
+    public static Camera OverlayGizmoCamera { get; private set; }
+    public static Camera AlwaysTopPropsCam { get; private set; }
     
     private static bool _spheresVisible = false;
     public static bool SpheresVisible {
@@ -144,7 +174,10 @@ public partial class RfPlugin : BaseUnityPlugin
     }
     
     public static void UpdateSpheres(Vector3 pos, float locScale = 1f) => UpdateSpheres(pos, new Vector3(locScale, locScale, locScale));
-
+    
+    public static int spheresLayer = 20; //LayerMask.NameToLayer("HiddenAvatar");
+    public static int onTopPropsLayer = 21; //LayerMask.NameToLayer("HiddenAvatar");
+    
     public static void UpdateSpheres(Vector3 pos, Vector3 locScale)
     {
         int i = 1;
@@ -154,25 +187,89 @@ public partial class RfPlugin : BaseUnityPlugin
             //var factor = .1f * i;
             sphere.transform.position = pos;
             sphere.transform.localScale = locScale * factor;
-            
+            sphere.layer = spheresLayer;
             i++;
         }
+        //MyCoolCamera.CopyFrom(Camera.main);
+        //MyCoolCamera.cullingMask = LayerMask.GetMask(LayerMask.LayerToName(spheresLayer));
+        //MyCoolCamera.clearFlags = CameraClearFlags.Nothing;
+        //MyCoolCamera.depth = 1;
     }
+
+    //public static int setGizmoCamDepth = -1;
+    public static List<int> myCamCullingMask = [spheresLayer];
     
     private void Update()
     {
         // A lot of plugin related things happen in the Harmony patches.
-
-        // TODO: make this happen in a PropWindow.Update patch or something
-        var title = VSeeFaceHelper.MainPropWindow.transform.Find("Title");
-        if (title && title.GetComponent<Text>() is Text textUI)
-        {
-            textUI.text = $"Props ({VSeeFaceHelper.PropButtons.Count})";
-        } else
-        {
-            // log warn once?
-        }
         
+        // TODO: rewire all this messing around with cameras to be cleaner...!
+
+        if (DebugGizmoCamera == null)
+        {
+            //if (Camera.main)
+            //    DebugGizmoCamera = Instantiate(Camera.main);
+            //DebugGizmoCamera = new();
+            var go = new GameObject("DebugGizmoCamera");
+            DebugGizmoCamera = go.AddComponent<Camera>();
+        
+        }
+        if (Camera.main)
+            DebugGizmoCamera.CopyFrom(Camera.main);
+        //DebugGizmoCamera.cullingMask = LayerMask.GetMask(LayerMask.LayerToName(spheresLayer));
+        //DebugGizmoCamera.cullingMask = LayerMask.GetMask(myCamCullingMask.Select(i => LayerMask.LayerToName(i)).ToArray());
+        DebugGizmoCamera.cullingMask = 1 << spheresLayer;
+        
+        DebugGizmoCamera.clearFlags = CameraClearFlags.Nothing;
+        DebugGizmoCamera.depth = -0.97f;
+        
+        if (AlwaysTopPropsCam == null)
+        {
+            //if (Camera.main)
+            //    AlwaysTopPropsCam = Instantiate(Camera.main);
+            //AlwaysTopPropsCam = new();
+            var go = new GameObject("AlwaysTopPropsCam");
+            AlwaysTopPropsCam = go.AddComponent<Camera>();
+        
+        }
+        if (Camera.main)
+            AlwaysTopPropsCam.CopyFrom(Camera.main);
+        //AlwaysTopPropsCam.cullingMask = LayerMask.GetMask(LayerMask.LayerToName(spheresLayer));
+        AlwaysTopPropsCam.cullingMask = 1 << onTopPropsLayer;
+        
+        // FIXME: The Always-Top props end up on top of post-processing....
+        // => apply post-processing to this camera as well?... mayyybe
+        AlwaysTopPropsCam.clearFlags = CameraClearFlags.Depth;
+        AlwaysTopPropsCam.depth = -1f;
+        
+        if (OverlayGizmoCamera == null)
+        {
+            //if (Camera.main)
+            //    OverlayGizmoCamera = Instantiate(Camera.main);
+            //OverlayGizmoCamera = new();
+            var go = new GameObject("OverlayGizmoCamera");
+            OverlayGizmoCamera = go.AddComponent<Camera>();
+        
+        }
+        if (Camera.main)
+            OverlayGizmoCamera.CopyFrom(Camera.main);
+        OverlayGizmoCamera.cullingMask = 1 << spheresLayer;
+        
+        OverlayGizmoCamera.clearFlags = CameraClearFlags.Depth;
+        OverlayGizmoCamera.depth = 1f;
+        
+        
+        /*if (MyCoolCamera && Camera.main && !gotCameraCopyFrom)
+        {
+            MyCoolCamera.CopyFrom(Camera.main);
+            //MyCoolCamera.transform.SetPositionAndRotation(Camera.main.transform.position, Camera.main.transform.rotation);
+            MyCoolCamera.cullingMask = LayerMask.GetMask("Gizmos");
+            //MyCoolCamera.depthTextureMode = DepthTextureMode.None;
+            MyCoolCamera.clearFlags = CameraClearFlags.Depth;
+            gotCameraCopyFrom = true;
+        }*/
+    
+
     }
     
     /*
@@ -182,8 +279,10 @@ public partial class RfPlugin : BaseUnityPlugin
     */
     public void OnRenderObject()
     {
+        
+
         // only interested in the main camera that renders the VSF avatar
-        if (Camera.current != Camera.main)
+        if (Camera.current != DebugGizmoCamera && Camera.current != OverlayGizmoCamera)
             return;
         
         // using https://github.com/loco-choco/GizmosLibraryPlugin sample code
@@ -194,6 +293,20 @@ public partial class RfPlugin : BaseUnityPlugin
         // Sets the default material for gizmos
         GizmosLibraryPlugin.GizmosAPI.SetDefaultMaterialPass();
         
+        Color colorAttachRay = Color.magenta;
+        Color colorAttachCapsule = Color.yellow;
+        Color colorBone = Color.cyan;
+
+        if (Camera.current == OverlayGizmoCamera)
+        {
+            colorAttachRay.a = .12f;
+            colorAttachCapsule.a = .12f;
+            colorBone.a = .3f;
+        } else if (Camera.current == DebugGizmoCamera)
+        {
+            colorBone.a = .5f;
+        }
+        
         // draw some gizmos after/while a VSF prop is being attached
         if (attachedBone != null)
         {
@@ -202,12 +315,15 @@ public partial class RfPlugin : BaseUnityPlugin
             {
                 // draw some junk at the attachmentRay :juh:
                 //GizmosLibraryPlugin.GizmosAPI.DrawWireframeCapsule(0.1f, Vector3.forward + Vector3.up * 0.1f, Vector3.forward - Vector3.up * 0.1f, Color.cyan, 12);
-                GizmosLibraryPlugin.GizmosAPI.DrawWireframeCapsule(0.02f, attachmentRay.origin, attachmentRay.origin + attachmentRay.direction * .02f, Color.yellow, 12);
-                GizmosLibraryPlugin.GizmosAPI.DrawVector(attachmentRay.direction.normalized, .02f, attachmentRay.origin, Color.magenta);
+                GizmosLibraryPlugin.GizmosAPI.DrawWireframeCapsule(0.02f, attachmentRay.origin, attachmentRay.origin + attachmentRay.direction * .02f, colorAttachCapsule, 12);
+                GizmosLibraryPlugin.GizmosAPI.DrawVector(attachmentRay.direction.normalized, .02f, attachmentRay.origin, colorAttachRay);
                 
-                GizmosLibraryPlugin.GizmosAPI.DrawVector(Vector3.up, .02f, Vector3.zero, Color.cyan);
+                GizmosLibraryPlugin.GizmosAPI.DrawVector(Vector3.up, .02f, Vector3.zero, colorBone);
             });
         }
+
+        if (Camera.current == OverlayGizmoCamera)
+            return;
     
         var drags = Resources.FindObjectsOfTypeAll<Draggable>();
         foreach (var drag in drags)
@@ -217,16 +333,16 @@ public partial class RfPlugin : BaseUnityPlugin
                 RectTransform prt = drag.transform.GetComponent<RectTransform>();
                 
                 Vector2 size = new(prt.rect.width, prt.rect.height);
-                UnityHelper.DrawRect2D(prt, Color.red, new(size.x, 0f, 0f));
-                UnityHelper.DrawRect2D(prt, Color.red, new(0f, size.y, 0f));
+                UnityHelper.DrawRect2D(prt, Color.red, new(size.x, 0f, 0f), DebugGizmoCamera);
+                UnityHelper.DrawRect2D(prt, Color.red, new(0f, size.y, 0f), DebugGizmoCamera);
                 
                 int i = 1;
                 foreach (var c in drag.gameObject.TransChildren())
                 {
                     RectTransform rt = c.transform.GetComponent<RectTransform>();
                 
-                    UnityHelper.DrawRect2D(rt, Color.red * 1f/i, new(size.x, 0f, 0f));
-                    UnityHelper.DrawRect2D(rt, Color.red * 1f/i, new(0f, size.y, 0f));
+                    UnityHelper.DrawRect2D(rt, Color.red * 1f/i, new(size.x, 0f, 0f), DebugGizmoCamera);
+                    UnityHelper.DrawRect2D(rt, Color.red * 1f/i, new(0f, size.y, 0f), DebugGizmoCamera);
                     i++;
                 }
             }
@@ -245,6 +361,24 @@ public partial class RfPlugin : BaseUnityPlugin
         PropButtonWrapper.Debug(p.GetComponentInChildren<PropButton>(), p.gameObject);
         
         Log($"Tracked prop buttons: {VSeeFaceHelper.PropButtons.Count}");
+    }
+    
+    public void toggle_callback(bool val)
+    {
+        Log($"toggle_callback: {val}");
+    }
+    
+    public void dropdown_callback(int val)
+    {
+        Log($"dropdown_callback: {val}");
+    }
+    
+    public void extension_settings_callback()
+    {
+        var windowVisible = ExtensionSettings.Parent.activeSelf;
+        Log($"extension_settings_callback: {windowVisible}");
+    
+        ExtensionSettings.Parent.SetActive(!windowVisible);
     }
 
     public void advanced_settings_callback()

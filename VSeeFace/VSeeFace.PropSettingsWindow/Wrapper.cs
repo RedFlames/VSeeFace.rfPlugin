@@ -12,6 +12,8 @@ public class PropSettingsWindowWrapper
 {
     public static GameObject PrefabPropSettingsButton { get; private set; }
     public static GameObject PrefabPropSettingsSlider { get; private set; }
+    public static GameObject PrefabPropSettingsCheckbox { get; private set; }
+    public static GameObject PrefabPropSettingsDropdown { get; private set; }
     
     public PropSettingsWindow Wrapped { get; private set; }
     
@@ -31,10 +33,18 @@ public class PropSettingsWindowWrapper
         var buttonComponent = MainPropSettings.GetComponentInChildren<Button>();
         PrefabPropSettingsButton = UObj.Instantiate(buttonComponent.transform.gameObject, null);
         PrefabPropSettingsButton.SetActive(false);
-
+        
         var sliderComponent = MainPropSettings.GetComponentInChildren<Slider>();
         PrefabPropSettingsSlider = UObj.Instantiate(sliderComponent.transform.parent.gameObject, null);
         PrefabPropSettingsSlider.SetActive(false);
+        
+        var checkComponent = MainPropSettings.GetComponentInChildren<Toggle>();
+        PrefabPropSettingsCheckbox = UObj.Instantiate(checkComponent.transform.gameObject, null);
+        PrefabPropSettingsCheckbox.SetActive(false);
+        
+        var dropdownComponent = VSeeFaceHelper.MainUI.Settings.general.GetComponentInChildren<Dropdown>();
+        PrefabPropSettingsDropdown = UObj.Instantiate(dropdownComponent.transform.gameObject, null);
+        PrefabPropSettingsDropdown.SetActive(false);
         
         var origRect = UObj.Instantiate(MainPropSettings.transform.GetComponent<RectTransform>());
         PropSettingsOrigRT[MainPropSettingsWindow.GetInstanceID()] = origRect;
@@ -103,7 +113,15 @@ public class PropSettingsWindowWrapper
         
         return wrapper;
     }
-
+    
+    public enum UIElement
+    {
+        Invalid,
+        Button,
+        Slider,
+        Toggle,
+        Dropdown
+    }
 
     public GameObject CreatePropSetting<T>(string text, int siblingIndex = -1)
     where T : UObj
@@ -113,29 +131,39 @@ public class PropSettingsWindowWrapper
         GameObject newObj;
         
         // this is mega pointless
-        bool isButton = typeof(Button).IsAssignableFrom(typeof(T));
-        bool isSlider = typeof(Slider).IsAssignableFrom(typeof(T));
-        //bool isCheckbox = typeof(Checkbox).IsAssignableFrom(typeof(T));
+        UIElement element = UIElement.Invalid;
         
-        if (isButton)
-            newObj = UObj.Instantiate(PrefabPropSettingsButton, parent: window.transform);
-            //newObj = UObj.Instantiate(MainUI.propSettings.GetChildWithComponent<Button>(), parent: MainUI.propSettings.transform);
-        else if (isSlider)
+        if (typeof(Button).IsAssignableFrom(typeof(T)))
+            element = UIElement.Button;
+        if (typeof(Slider).IsAssignableFrom(typeof(T)))
+            element = UIElement.Slider;
+        if (typeof(Toggle).IsAssignableFrom(typeof(T)))
+            element = UIElement.Toggle;
+        if (typeof(Dropdown).IsAssignableFrom(typeof(T)))
+            element = UIElement.Dropdown;
+        
+        switch (element)
         {
+            case UIElement.Button:
+                newObj = UObj.Instantiate(PrefabPropSettingsButton, parent: window.transform);
+                break;
             
-            newObj = UObj.Instantiate(PrefabPropSettingsSlider, parent: window.transform);
-            //newObj = UObj.Instantiate(MainUI.propSettings.TransChildren().First(ch => ch.GetComponentInChildren<Slider>()), parent: MainUI.propSettings.transform);
+            case UIElement.Slider:
+                newObj = UObj.Instantiate(PrefabPropSettingsSlider, parent: window.transform);
+                break;
+            
+            case UIElement.Toggle:
+                newObj = UObj.Instantiate(PrefabPropSettingsCheckbox, parent: window.transform);
+                break;
+            
+            case UIElement.Dropdown:
+                newObj = UObj.Instantiate(PrefabPropSettingsDropdown, parent: window.transform);
+                break;
+            
+            default:
+                RfPlugin.LogError($"Cannot determine what UI element to instantiate as '{typeof(T)}', sorry.");
+                return null;
         }
-        else
-        {
-            RfPlugin.LogError($"Cannot determine what UI element to instantiate as '{typeof(T)}', sorry.");
-            return null;
-        }
-        
-        //TODO
-        //AddedMenuButtons.Add(newBtn);
-        
-        //newBtn.transform.SetParent(MainUI.menuRight.transform, false);
         
         siblingIndex = Math.Min(siblingIndex, window.transform.childCount-1);
         
@@ -153,16 +181,36 @@ public class PropSettingsWindowWrapper
         RfPlugin.LogGameObject($"New PS {typeof(T)} = {newObj.GetType()} added", newObj);
         RfPlugin.LogComponent("newObj.Text", textComp);
         
-        if (isButton)
+        switch (element)
         {
-            Button comp = newObj.GetComponentInChildren<Button>();
-            comp.onClick.RemoveAllListeners();
-            comp.onClick = new();
-        } else if (isSlider)
-        {
-            Slider comp = newObj.GetComponentInChildren<Slider>();
-            comp.onValueChanged.RemoveAllListeners();
-            comp.onValueChanged = new();
+            case UIElement.Button:
+                Button btnComp = newObj.GetComponentInChildren<Button>();
+                btnComp.onClick.RemoveAllListeners();
+                btnComp.onClick = new();
+                break;
+            
+            case UIElement.Slider:
+                Slider sliderComp = newObj.GetComponentInChildren<Slider>();
+                sliderComp.onValueChanged.RemoveAllListeners();
+                sliderComp.onValueChanged = new();
+                break;
+            
+            case UIElement.Toggle:
+                Toggle toggleComp = newObj.GetComponentInChildren<Toggle>();
+                toggleComp.onValueChanged.RemoveAllListeners();
+                toggleComp.onValueChanged = new();
+                break;
+            
+            case UIElement.Dropdown:
+                Dropdown ddComp = newObj.GetComponentInChildren<Dropdown>();
+                ddComp.onValueChanged.RemoveAllListeners();
+                ddComp.onValueChanged = new();
+                break;
+            
+            default:
+                // this'll never be hit, oh well
+                RfPlugin.LogError($"Cannot determine what UI element to instantiate as '{typeof(T)}', sorry.");
+                return null;
         }
         
         RectTransform origRect;
